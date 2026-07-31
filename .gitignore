@@ -1,0 +1,5 @@
+/madabyo-bin
+/madabyo
+*.exe
+web/dist/
+web/node_modules/
