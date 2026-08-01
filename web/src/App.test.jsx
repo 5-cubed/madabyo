@@ -3,6 +3,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
 import App from './App'
+import * as FolderHandleStore from './workspace/folderHandleStore'
+
+vi.mock('./workspace/folderHandleStore')
 
 // Test helpers for fake file system handles
 function fakeFile(name) {
@@ -50,6 +53,8 @@ function fakeDirDeferred(name, entries = [], gate) {
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(FolderHandleStore.saveHandle).mockResolvedValue(undefined)
+    vi.mocked(FolderHandleStore.closeDb).mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -57,7 +62,7 @@ describe('App', () => {
   })
 
   it('displays folder name after clicking Open Folder', async () => {
-    const fakeHandle = { name: 'Projects' }
+    const fakeHandle = fakeDir('Projects', [])
     vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValueOnce(fakeHandle))
 
     const user = userEvent.setup()
