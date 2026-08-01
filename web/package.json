@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "marked": "^18.0.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
