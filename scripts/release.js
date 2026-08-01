@@ -166,7 +166,7 @@ async function main() {
     // Step 9: Update package.json
     if (!flags.dry) {
       packageJson.version = nextVersion;
-      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
       console.log("  ✓ Updated web/package.json");
     } else {
       console.log("  [DRY-RUN] Would update web/package.json");
@@ -181,12 +181,11 @@ async function main() {
     if (!flags.dry) {
       const commitMsg = `release: v${nextVersion}`;
       run(`git add web/package.json CHANGELOG.md`);
-      run(`git commit -m "${commitMsg}"`);
+      run(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`);
       console.log(`  ✓ Created commit: ${commitMsg}`);
 
-      run(
-        `git tag -a v${nextVersion} -m "Release v${nextVersion} - See CHANGELOG.md for details"`
-      );
+      const tagMsg = `Release v${nextVersion} - See CHANGELOG.md for details`;
+      run(`git tag -a v${nextVersion} -m "${tagMsg.replace(/"/g, '\\"')}"`);
       console.log(`  ✓ Created tag: v${nextVersion}`);
     } else {
       console.log(`  [DRY-RUN] Would create commit and tag v${nextVersion}`);
@@ -233,10 +232,20 @@ function formatChangelogEntry(version, commits) {
   };
 
   const grouped = {};
+  const categorized = new Set();
+
   for (const [prefix, title] of Object.entries(sections)) {
     grouped[title] = commits
       .filter((c) => c.startsWith(prefix))
-      .map((c) => `- ${c.replace(prefix, "").trim()}`);
+      .map((c) => {
+        categorized.add(c);
+        return `- ${c.replace(prefix, "").trim()}`;
+      });
+  }
+
+  const uncategorized = commits.filter((c) => !categorized.has(c));
+  if (uncategorized.length > 0) {
+    grouped["### Other"] = uncategorized.map((c) => `- ${c}`);
   }
 
   let entry = `## [${version}] - ${date}\n\n`;
@@ -244,10 +253,6 @@ function formatChangelogEntry(version, commits) {
     if (lines.length > 0) {
       entry += `${title}\n${lines.join("\n")}\n\n`;
     }
-  }
-
-  if (commits.length === grouped[Object.keys(grouped)[0]]?.length ?? 0) {
-    entry += `- Release v${version}\n`;
   }
 
   return entry.trim();
