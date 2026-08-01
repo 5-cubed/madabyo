@@ -18,5 +18,5 @@ export function useWorkspace() {
     }
   }
 
-  return { folderHandle, tree, isScanning, openFolder }
+  return { folderHandle, tree, isScanning, openFolder, isSupported: FolderPicker.isSupported() }
 }

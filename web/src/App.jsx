@@ -1,9 +1,11 @@
 import React from 'react'
+import SidebarTree from './components/SidebarTree'
 import { useWorkspace } from './workspace/useWorkspace'
+import './theme/tokens.css'
 import './App.css'
 
 function App() {
-  const { folderHandle, openFolder } = useWorkspace()
+  const { folderHandle, tree, isSupported, isScanning, openFolder } = useWorkspace()
 
   return (
     <>
@@ -14,6 +16,21 @@ function App() {
         Open Folder
       </button>
       {folderHandle && <p>{folderHandle.name}</p>}
+      {!isSupported ? (
+        <SidebarTree tree={null} status="unsupported" onSelectFile={() => {}} />
+      ) : (
+        isScanning ? (
+          <SidebarTree tree={null} status="loading" onSelectFile={() => {}} />
+        ) : (
+          tree && (
+            <SidebarTree
+              tree={tree}
+              status={tree.children.length === 0 ? 'empty' : 'ready'}
+              onSelectFile={() => {}}
+            />
+          )
+        )
+      )}
     </>
   )
 }
