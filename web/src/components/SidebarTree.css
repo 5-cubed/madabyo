@@ -1,0 +1,32 @@
+.sidebar-tree {
+  background: var(--color-sidebar-bg);
+  color: var(--color-ink);
+}
+
+.tree-node {
+  margin-left: 0;
+}
+
+.tree-children {
+  margin-left: 1rem;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+
+.tree-row img {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.sidebar-message {
+  padding: 1rem;
+  color: var(--color-ink);
+  background: var(--color-sidebar-bg);
+}
