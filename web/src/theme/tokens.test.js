@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import tokensCss from './tokens.css?raw'
+import fs from 'fs'
+import path from 'path'
+
+const tokensCss = fs.readFileSync(path.join(__dirname, './tokens.css'), 'utf-8')
 
 describe('Theme Tokens', () => {
   it('should define color-editor-bg token', () => {
