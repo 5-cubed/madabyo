@@ -8,11 +8,11 @@ import * as FolderHandleStore from './workspace/folderHandleStore'
 vi.mock('./workspace/folderHandleStore')
 
 // Test helpers for fake file system handles
-function fakeFile(name) {
+function fakeFile(name, content = '') {
   return {
     name,
     kind: 'file',
-    getFile: async () => new File([''], name)
+    getFile: async () => ({ text: async () => content })
   }
 }
 
@@ -138,5 +138,44 @@ describe('App', () => {
 
     await screen.findByText('todo.md')
     expect(screen.queryByText('Loading files...')).not.toBeInTheDocument()
+  })
+
+  it('renders a file\'s markdown content in the pane when clicked in the sidebar', async () => {
+    const mockHandle = fakeDir('notes', [['todo.md', fakeFile('todo.md', '# Hello')]])
+    vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValueOnce(mockHandle))
+
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Open Folder' }))
+    const todoRow = await screen.findByText('todo.md')
+    await user.click(todoRow)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Hello' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'todo.md' })).toBeInTheDocument()
+  })
+
+  it('opens a second independent pane on split and keeps the first file visible', async () => {
+    const mockHandle = fakeDir('notes', [
+      ['a.md', fakeFile('a.md', '# A')],
+      ['b.md', fakeFile('b.md', '# B')]
+    ])
+    vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValueOnce(mockHandle))
+
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Open Folder' }))
+    await user.click(await screen.findByText('a.md'))
+    await screen.findByRole('heading', { level: 1, name: 'A' })
+
+    await user.click(screen.getByRole('button', { name: 'Split pane-1' }))
+    expect(screen.getByRole('button', { name: 'Split pane-2' })).toBeInTheDocument()
+
+    // Focus the new (still-empty) pane before opening a second file into it.
+    await user.click(screen.getByText('No file open'))
+    await user.click(screen.getByText('b.md'))
+    expect(await screen.findByRole('heading', { level: 1, name: 'B' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'A' })).toBeInTheDocument()
   })
 })

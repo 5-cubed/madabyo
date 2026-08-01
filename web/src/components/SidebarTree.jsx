@@ -8,12 +8,15 @@ const ICONS = {
   markdown: `${ICON_BASE}/svg/file_type_markdown.svg`
 }
 
-function TreeNode({ node }) {
+function TreeNode({ node, onSelectFile }) {
   const isDir = node.type === 'dir'
 
   return (
     <div className="tree-node">
-      <div className="tree-row">
+      <div
+        className="tree-row"
+        onClick={isDir ? undefined : () => onSelectFile(node.handle)}
+      >
         <img
           src={isDir ? ICONS.folder : ICONS.markdown}
           alt=""
@@ -23,7 +26,7 @@ function TreeNode({ node }) {
       {isDir && (
         <div className="tree-children">
           {node.children.map((child) => (
-            <TreeNode key={child.path} node={child} />
+            <TreeNode key={child.path} node={child} onSelectFile={onSelectFile} />
           ))}
         </div>
       )}
@@ -50,7 +53,7 @@ export default function SidebarTree({ tree, status, onSelectFile }) {
 
   return (
     <div className="sidebar-tree">
-      <TreeNode node={tree} />
+      <TreeNode node={tree} onSelectFile={onSelectFile} />
     </div>
   )
 }
