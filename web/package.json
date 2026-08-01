@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "release": "node ../scripts/release.js"
   },
   "dependencies": {
     "marked": "^18.0.7",
@@ -25,6 +26,7 @@
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^23.0.1",
     "oxlint": "^1.75.0",
+    "semver": "^7.6.3",
     "vite": "^8.2.0",
     "vitest": "^1.0.4"
   }
