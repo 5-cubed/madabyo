@@ -5,6 +5,16 @@ All notable changes to madabyo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-01
+
+### Fixes
+- run vitest in one-shot mode for npm test
+
+### Other
+- build: add Makefile with build target for web and go binary
+- deps: bump @testing-library/react to ^16.3.2 for React 19 compatibility
+- Bring markdown viewer UI in line with validated experiment prototype
+
 ## [0.1.0] - 2026-08-01
 
 ### Features
