@@ -3,4 +3,10 @@
   --color-sidebar-bg: #f6f5f1;
   --color-ink: #2a2920;
   --color-accent: #9a4929;
+
+  --color-ink-dim: #8a8672;
+  --color-border: #e3e0d3;
+  --color-hover: #ece8db;
+  --color-selected: #ecdac8;
+  --color-tab-inactive: #eeece2;
 }

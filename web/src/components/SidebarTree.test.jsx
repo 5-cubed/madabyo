@@ -3,8 +3,6 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import SidebarTree from './SidebarTree'
 
-const ICON_BASE = 'https://cdn.jsdelivr.net/npm/vscode-icons@12.0.0/icons'
-
 describe('SidebarTree', () => {
   it('should render a folder icon for a directory node', () => {
     render(

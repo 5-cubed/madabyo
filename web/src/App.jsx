@@ -45,59 +45,69 @@ function App() {
   }
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={openFolder}
-      >
-        Open Folder
-      </button>
-      {folderHandle && <p>{folderHandle.name}</p>}
-      {!isSupported ? (
-        <SidebarTree tree={null} status="unsupported" onSelectFile={() => {}} />
-      ) : (
-        isScanning ? (
-          <SidebarTree tree={null} status="loading" onSelectFile={() => {}} />
-        ) : (
-          tree && (
-            <SidebarTree
-              tree={tree}
-              status={tree.children.length === 0 ? 'empty' : 'ready'}
-              onSelectFile={handleSelectFile}
-            />
-          )
-        )
-      )}
-      <SplitContainer
-        panes={paneManager.panes}
-        onSplit={handleSplit}
-        onResize={handleResize}
-        onClosePane={handleClosePane}
-      />
-      <div className="panes-content">
-        {paneManager.panes.map((pane) => (
-          <div
-            key={pane.id}
-            className="pane-content-wrapper"
-            style={pane.width != null ? { width: `${pane.width}%` } : undefined}
-            onMouseDown={() => setActivePaneId(pane.id)}
-          >
-            <Pane
-              tabs={pane.tabManager.tabs}
-              activeTabId={pane.tabManager.activeTabId}
-              onSelectTab={(fileId) => {
-                pane.tabManager.focusTab(fileId)
-                rerender()
-              }}
-              onCloseTab={(fileId) => {
-                pane.tabManager.closeTab(fileId)
-                rerender()
-              }}
-            />
+    <div className="app-shell">
+      <header className="app-toolbar">
+        <span className="app-title">Markdown Viewer</span>
+        {folderHandle && <span className="app-folder-name">{folderHandle.name}</span>}
+        <button
+          type="button"
+          className="btn-open-folder"
+          onClick={openFolder}
+        >
+          Open Folder
+        </button>
+      </header>
+      <div className="app-main">
+        <aside className="app-sidebar">
+          {!isSupported ? (
+            <SidebarTree tree={null} status="unsupported" onSelectFile={() => {}} />
+          ) : (
+            isScanning ? (
+              <SidebarTree tree={null} status="loading" onSelectFile={() => {}} />
+            ) : (
+              tree && (
+                <SidebarTree
+                  tree={tree}
+                  status={tree.children.length === 0 ? 'empty' : 'ready'}
+                  onSelectFile={handleSelectFile}
+                />
+              )
+            )
+          )}
+        </aside>
+        <div className="app-content">
+          <SplitContainer
+            panes={paneManager.panes}
+            onSplit={handleSplit}
+            onResize={handleResize}
+            onClosePane={handleClosePane}
+          />
+          <div className="panes-content">
+            {paneManager.panes.map((pane) => (
+              <div
+                key={pane.id}
+                className="pane-content-wrapper"
+                style={pane.width != null ? { width: `${pane.width}%` } : undefined}
+                onMouseDown={() => setActivePaneId(pane.id)}
+              >
+                <Pane
+                  tabs={pane.tabManager.tabs}
+                  activeTabId={pane.tabManager.activeTabId}
+                  onSelectTab={(fileId) => {
+                    pane.tabManager.focusTab(fileId)
+                    rerender()
+                  }}
+                  onCloseTab={(fileId) => {
+                    pane.tabManager.closeTab(fileId)
+                    rerender()
+                  }}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-    </>
+    </div>
   )
 }
 
