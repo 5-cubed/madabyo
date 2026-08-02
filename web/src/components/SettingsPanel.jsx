@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import PathAutocompleteInput from './PathAutocompleteInput'
 import './SettingsPanel.css'
 
-export default function SettingsPanel({ onClose }) {
+export default function SettingsPanel({ onClose, onSaved }) {
   const [path, setPath] = useState('')
   const [isValid, setIsValid] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -42,6 +42,7 @@ export default function SettingsPanel({ onClose }) {
         return
       }
       setSaving(false)
+      onSaved?.()
       onClose()
     } catch (err) {
       setSaveError(err.message)

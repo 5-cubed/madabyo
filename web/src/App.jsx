@@ -92,42 +92,42 @@ function App() {
   const [expandedPaths, setExpandedPaths] = useState(new Set())
 
   // Load workspace settings and initialize tree
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const settingsRes = await fetch('/api/settings')
-        const settings = await settingsRes.json()
+  async function loadTree() {
+    try {
+      const settingsRes = await fetch('/api/settings')
+      const settings = await settingsRes.json()
 
-        if (!settings.workspacePath) {
-          setTreeStatus('empty')
-          return
-        }
-
-        // Load root tree
-        const listRes = await fetch(`/api/list?path=${encodeURIComponent(settings.workspacePath)}`)
-        const listResult = await listRes.json()
-
-        if (listResult.error) {
-          setTreeStatus('error')
-          return
-        }
-
-        const rootNode = {
-          type: 'dir',
-          name: settings.workspacePath.split('/').pop() || settings.workspacePath,
-          path: settings.workspacePath,
-          children: entriesToNodes(listResult.entries || [], settings.workspacePath)
-        }
-
-        setTree(rootNode)
-        setTreeStatus('ready')
-      } catch (err) {
-        console.error('Failed to load tree:', err)
-        setTreeStatus('error')
+      if (!settings.workspacePath) {
+        setTreeStatus('empty')
+        return
       }
-    }
 
-    init()
+      // Load root tree
+      const listRes = await fetch(`/api/list?path=${encodeURIComponent(settings.workspacePath)}`)
+      const listResult = await listRes.json()
+
+      if (listResult.error) {
+        setTreeStatus('error')
+        return
+      }
+
+      const rootNode = {
+        type: 'dir',
+        name: settings.workspacePath.split('/').pop() || settings.workspacePath,
+        path: settings.workspacePath,
+        children: entriesToNodes(listResult.entries || [], settings.workspacePath)
+      }
+
+      setTree(rootNode)
+      setTreeStatus('ready')
+    } catch (err) {
+      console.error('Failed to load tree:', err)
+      setTreeStatus('error')
+    }
+  }
+
+  useEffect(() => {
+    loadTree()
   }, [])
 
   // Handle directory expansion
@@ -217,6 +217,10 @@ function App() {
     rerender()
   }
 
+  function handleSettingsSaved() {
+    loadTree()
+  }
+
   return (
     <div className="app-shell">
       <header className="app-toolbar">
@@ -233,7 +237,7 @@ function App() {
           </svg>
         </button>
       </header>
-      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} onSaved={handleSettingsSaved} />}
       <div className="app-main">
         <aside className="app-sidebar">
           <SidebarTree tree={tree} status={treeStatus} onSelectFile={(path) => {
