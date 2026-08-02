@@ -33,6 +33,25 @@ describe('TabManager', () => {
     expect(tm.tabs).toHaveLength(2);
   });
 
+  // Test: updateTabResult
+  it('updates a tab result in place without changing order or activeTabId', () => {
+    const tm = new TabManager();
+    tm.openTab('a.md', { status: 'ok', html: '<h1>A</h1>' });
+    tm.openTab('b.md', { status: 'ok', html: '<h1>B</h1>' });
+    const newResult = { status: 'ok', html: '<h1>A Updated</h1>' };
+    tm.updateTabResult('a.md', newResult);
+    expect(tm.tabs[0].renderResult).toEqual(newResult);
+    expect(tm.activeTabId).toBe('b.md');
+    expect(tm.tabs).toHaveLength(2);
+  });
+
+  it('is a no-op when fileId not found', () => {
+    const tm = new TabManager();
+    tm.openTab('a.md', { status: 'ok', html: '<h1>A</h1>' });
+    tm.updateTabResult('missing.md', { status: 'ok', html: '<h1>X</h1>' });
+    expect(tm.tabs[0].renderResult.html).toBe('<h1>A</h1>');
+  });
+
   // Step 31 test scenarios (SEQ-015 + SEQ-016)
   describe('closeTab', () => {
     // Scenario 1: closing non-active tab

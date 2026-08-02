@@ -37,3 +37,15 @@ func (SettingsUsecase) Save(raw string, lister external.DirLister, store externa
 
 	return cfg, objects.ListResult{}, nil
 }
+
+func (SettingsUsecase) EnsureDefaultWorkspace(store external.ConfigStore, cwd string) error {
+	cfg, err := store.Load()
+	if err != nil {
+		return err
+	}
+	if cfg.WorkspacePath != "" || cwd == "" {
+		return nil
+	}
+	cfg.WorkspacePath = cwd
+	return store.Save(cfg)
+}

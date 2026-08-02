@@ -1,17 +1,19 @@
 import { marked } from 'marked';
 
-export async function renderFile(handle) {
+export async function renderFile(path) {
   let text;
 
-  // Read the file, with not-found error handling (Step 23)
+  // Fetch file content from /api/file endpoint
   try {
-    const file = await handle.getFile();
-    text = await file.text();
+    const res = await fetch(`/api/file?path=${encodeURIComponent(path)}`);
+    const result = await res.json();
+    if (result.error) return { status: 'not-found' };
+    text = result.content;
   } catch {
     return { status: 'not-found' };
   }
 
-  // Parse the markdown to HTML, with render-error handling (Step 15)
+  // Parse the markdown to HTML, with render-error handling
   try {
     const html = marked.parse(text);
     return { status: 'ok', html };

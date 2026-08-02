@@ -27,6 +27,11 @@ export class TabManager {
     this._activeTabId = fileId;
   }
 
+  updateTabResult(fileId, renderResult) {
+    const tab = this._tabs.find((t) => t.fileId === fileId);
+    if (tab) tab.renderResult = renderResult;
+  }
+
   closeTab(fileId) {
     const closedIndex = this._tabs.findIndex((t) => t.fileId === fileId);
     this._tabs = this._tabs.filter((t) => t.fileId !== fileId);

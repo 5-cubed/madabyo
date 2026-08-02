@@ -2,71 +2,82 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { marked } from 'marked';
 import * as MarkdownRenderer from './markdownRenderer.js';
 
-function fakeFileHandle(name, content) {
-  return {
-    kind: 'file',
-    name,
-    async getFile() {
-      return {
-        text: async () => content,
-      };
-    },
-  };
-}
-
-function fakeMissingFileHandle(name) {
-  return {
-    kind: 'file',
-    name,
-    async getFile() {
-      throw new DOMException(
-        'A requested file or directory could not be found',
-        'NotFoundError'
-      );
-    },
-  };
-}
-
 describe('MarkdownRenderer', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  // Step 2 test: basic rendering
-  it('renders a simple markdown file (Step 2)', async () => {
-    const handle = fakeFileHandle('notes.md', '# Hello');
-    const result = await MarkdownRenderer.renderFile(handle);
+  // Test: basic rendering with ok content
+  it('renders a simple markdown file', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        requested: '/path/to/notes.md',
+        resolved: '/path/to/notes.md',
+        content: '# Hello',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await MarkdownRenderer.renderFile('/path/to/notes.md');
     expect(result).toEqual({
       status: 'ok',
       html: expect.stringContaining('<h1>Hello</h1>'),
     });
+    expect(mockFetch).toHaveBeenCalledWith(
+      `/api/file?path=${encodeURIComponent('/path/to/notes.md')}`
+    );
   });
 
-  // Step 4 test: regression check for headings, lists, code blocks
-  it('renders markdown with headings, lists, and code blocks (Step 4)', async () => {
-    const handle = fakeFileHandle(
-      'guide.md',
-      '## Section\n\n- item\n\n```js\ncode()\n```'
-    );
-    const result = await MarkdownRenderer.renderFile(handle);
+  // Test: rendering with headings, lists, and code blocks
+  it('renders markdown with headings, lists, and code blocks', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '## Section\n\n- item\n\n```js\ncode()\n```',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await MarkdownRenderer.renderFile('/path/to/guide.md');
     expect(result.status).toBe('ok');
     expect(result.html).toContain('<h2>Section</h2>');
     expect(result.html).toContain('<li>item</li>');
     expect(result.html).toContain('<pre><code');
   });
 
-  // Step 14 test: render-error for parser exception
-  it('resolves to render-error when parser throws (Step 14)', async () => {
+  // Test: render-error for parser exception
+  it('resolves to render-error when parser throws', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '# whatever',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
     vi.spyOn(marked, 'parse').mockImplementationOnce(() => {
       throw new Error('malformed input');
     });
-    const handle = fakeFileHandle('broken.md', '# whatever');
-    const result = await MarkdownRenderer.renderFile(handle);
+
+    const result = await MarkdownRenderer.renderFile('/path/to/broken.md');
     expect(result).toEqual({ status: 'render-error' });
   });
 
-  // Step 22 test: not-found for missing file
-  it('resolves to not-found when file is missing (Step 22)', async () => {
-    const handle = fakeMissingFileHandle('gone.md');
-    const result = await MarkdownRenderer.renderFile(handle);
+  // Test: not-found for envelope error
+  it('resolves to not-found when envelope has error', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        requested: '/path/to/missing.md',
+        error: 'file not found',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await MarkdownRenderer.renderFile('/path/to/missing.md');
+    expect(result).toEqual({ status: 'not-found' });
+  });
+
+  // Test: not-found for network error
+  it('resolves to not-found when fetch throws', async () => {
+    const mockFetch = vi.fn().mockRejectedValueOnce(new Error('network error'));
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await MarkdownRenderer.renderFile('/path/to/network-fail.md');
     expect(result).toEqual({ status: 'not-found' });
   });
 });

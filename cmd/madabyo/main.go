@@ -19,7 +19,12 @@ func configPath() string {
 }
 
 func main() {
-	h, err := server.New(configPath())
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Printf("warning: could not determine working directory (%v), falling back to \".\"", err)
+		cwd = "."
+	}
+	h, err := server.New(configPath(), cwd)
 	if err != nil {
 		log.Fatal(err)
 	}

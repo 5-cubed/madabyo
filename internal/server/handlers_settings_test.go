@@ -15,7 +15,7 @@ import (
 func TestHandleSettings(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(t.TempDir(), "config.json")
-	h, err := New(configPath)
+	h, err := New(configPath, "")
 	if err != nil {
 		t.Fatalf("New() returned error: %v", err)
 	}
@@ -110,6 +110,46 @@ func TestHandleSettings(t *testing.T) {
 
 		if rr.Code != http.StatusForbidden {
 			t.Fatalf("got status %d, want 403", rr.Code)
+		}
+	})
+
+	t.Run("GET before any save falls back to server cwd when one is provided", func(t *testing.T) {
+		configPath2 := filepath.Join(t.TempDir(), "config2.json")
+		cwd := "/tmp/test-workspace"
+		h2, err := New(configPath2, cwd)
+		if err != nil {
+			t.Fatalf("New() returned error: %v", err)
+		}
+
+		// GET /api/settings should return the cwd-filled path
+		req := httptest.NewRequest(http.MethodGet, "/api/settings", nil)
+		req.Host = "localhost"
+		rr := httptest.NewRecorder()
+
+		h2.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Fatalf("got status %d, want 200", rr.Code)
+		}
+		var cfg objects.Config
+		if err := json.Unmarshal(rr.Body.Bytes(), &cfg); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+		if cfg.WorkspacePath != cwd {
+			t.Fatalf("expected WorkspacePath = %q, got %q", cwd, cfg.WorkspacePath)
+		}
+
+		// Verify it's written to disk
+		configData, err := os.ReadFile(configPath2)
+		if err != nil {
+			t.Fatalf("failed to read config file: %v", err)
+		}
+		var cfgFromDisk objects.Config
+		if err := json.Unmarshal(configData, &cfgFromDisk); err != nil {
+			t.Fatalf("failed to decode config from disk: %v", err)
+		}
+		if cfgFromDisk.WorkspacePath != cwd {
+			t.Fatalf("expected persisted WorkspacePath = %q, got %q", cwd, cfgFromDisk.WorkspacePath)
 		}
 	})
 }

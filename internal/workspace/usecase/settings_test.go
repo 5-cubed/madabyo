@@ -93,3 +93,41 @@ func TestSettingsUsecase_Get(t *testing.T) {
 		t.Fatalf("cfg.WorkspacePath = %q, want /tmp/ws", cfg.WorkspacePath)
 	}
 }
+
+func TestSettingsUsecase_EnsureDefaultWorkspace(t *testing.T) {
+	t.Run("empty config + non-empty cwd fills config", func(t *testing.T) {
+		store := &fakeConfigStore{cfg: objects.Config{}}
+		err := SettingsUsecase{}.EnsureDefaultWorkspace(store, "/home/user")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if store.saveCall == nil {
+			t.Fatal("expected Save to be called")
+		}
+		if store.saveCall.WorkspacePath != "/home/user" {
+			t.Fatalf("saved WorkspacePath = %q, want /home/user", store.saveCall.WorkspacePath)
+		}
+	})
+
+	t.Run("non-empty config is untouched by cwd", func(t *testing.T) {
+		store := &fakeConfigStore{cfg: objects.Config{WorkspacePath: "/existing"}}
+		err := SettingsUsecase{}.EnsureDefaultWorkspace(store, "/home/user")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if store.saveCall != nil {
+			t.Fatal("expected Save not to be called when config already has a path")
+		}
+	})
+
+	t.Run("empty cwd is a no-op", func(t *testing.T) {
+		store := &fakeConfigStore{cfg: objects.Config{}}
+		err := SettingsUsecase{}.EnsureDefaultWorkspace(store, "")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if store.saveCall != nil {
+			t.Fatal("expected Save not to be called when cwd is empty")
+		}
+	})
+}

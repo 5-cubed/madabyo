@@ -13,7 +13,7 @@ import (
 
 func newTestServer(t *testing.T) http.Handler {
 	t.Helper()
-	h, err := New(filepath.Join(t.TempDir(), "config.json"))
+	h, err := New(filepath.Join(t.TempDir(), "config.json"), "")
 	if err != nil {
 		t.Fatalf("New() returned error: %v", err)
 	}

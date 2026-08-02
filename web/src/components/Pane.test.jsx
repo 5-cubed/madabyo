@@ -125,4 +125,35 @@ describe('Pane', () => {
     expect(onCloseTabSpy).toHaveBeenCalledOnce();
     expect(onCloseTabSpy).toHaveBeenCalledWith('b.md');
   });
+
+  // Regression: fileId is a full path (Step 13); intent.md requires the tab
+  // label to display the basename only, while selection/close still use the
+  // full path so tabs from different folders with the same basename don't collide.
+  it('displays only the basename in the tab label and close button, but keys/handlers on the full path', () => {
+    const onSelectTabSpy = vi.fn();
+    const onCloseTabSpy = vi.fn();
+    render(
+      <Pane
+        tabs={[
+          { fileId: '/repo/docs/notes.md', renderResult: { status: 'ok', html: '<h1>A</h1>' } },
+          { fileId: '/repo/other/notes.md', renderResult: { status: 'ok', html: '<h1>B</h1>' } },
+        ]}
+        activeTabId="/repo/docs/notes.md"
+        onSelectTab={onSelectTabSpy}
+        onCloseTab={onCloseTabSpy}
+      />
+    );
+
+    const tabs = screen.getAllByRole('tab', { name: 'notes.md' });
+    expect(tabs).toHaveLength(2);
+    expect(screen.queryByText('/repo/docs/notes.md')).not.toBeInTheDocument();
+    expect(screen.queryByText('/repo/other/notes.md')).not.toBeInTheDocument();
+
+    fireEvent.click(tabs[1]);
+    expect(onSelectTabSpy).toHaveBeenCalledWith('/repo/other/notes.md');
+
+    const closeButtons = screen.getAllByRole('button', { name: 'Close notes.md' });
+    fireEvent.click(closeButtons[1]);
+    expect(onCloseTabSpy).toHaveBeenCalledWith('/repo/other/notes.md');
+  });
 });

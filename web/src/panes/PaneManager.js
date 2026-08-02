@@ -14,17 +14,24 @@ export class PaneManager {
     return this._panes;
   }
 
-  async openFile(paneId, fileHandle) {
+  async openFile(paneId, path) {
     const pane = this._panes.find((p) => p.id === paneId);
-    const fileId = fileHandle.name;
+    const fileId = path;
 
     const existing = pane.tabManager.tabs.find((t) => t.fileId === fileId);
     if (existing) {
       pane.tabManager.focusTab(fileId);
       return;
     }
-    const result = await MarkdownRenderer.renderFile(fileHandle);
+    const result = await MarkdownRenderer.renderFile(path);
     pane.tabManager.openTab(fileId, result);
+  }
+
+  async refreshTab(paneId, fileId) {
+    const pane = this._panes.find((p) => p.id === paneId);
+    if (!pane) return;
+    const result = await MarkdownRenderer.renderFile(fileId);
+    pane.tabManager.updateTabResult(fileId, result);
   }
 
   async splitRight(sourcePaneId) {

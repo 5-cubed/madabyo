@@ -1,5 +1,10 @@
 import React from 'react';
 
+function basename(path) {
+  const idx = path.lastIndexOf('/');
+  return idx === -1 ? path : path.slice(idx + 1);
+}
+
 export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab }) {
   const activeTab = tabs.find((t) => t.fileId === activeTabId);
 
@@ -22,10 +27,10 @@ export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab }) {
                 aria-selected={tab.fileId === activeTabId}
                 onClick={() => onSelectTab(tab.fileId)}
               >
-                {tab.fileId}
+                {basename(tab.fileId)}
               </button>
               <button
-                aria-label={`Close ${tab.fileId}`}
+                aria-label={`Close ${basename(tab.fileId)}`}
                 onClick={() => onCloseTab(tab.fileId)}
               >
                 ×
@@ -50,10 +55,10 @@ export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab }) {
                 aria-selected={tab.fileId === activeTabId}
                 onClick={() => onSelectTab(tab.fileId)}
               >
-                {tab.fileId}
+                {basename(tab.fileId)}
               </button>
               <button
-                aria-label={`Close ${tab.fileId}`}
+                aria-label={`Close ${basename(tab.fileId)}`}
                 onClick={() => onCloseTab(tab.fileId)}
               >
                 ×
@@ -78,10 +83,10 @@ export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab }) {
                 aria-selected={tab.fileId === activeTabId}
                 onClick={() => onSelectTab(tab.fileId)}
               >
-                {tab.fileId}
+                {basename(tab.fileId)}
               </button>
               <button
-                aria-label={`Close ${tab.fileId}`}
+                aria-label={`Close ${basename(tab.fileId)}`}
                 onClick={() => onCloseTab(tab.fileId)}
               >
                 ×
