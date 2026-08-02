@@ -19,11 +19,6 @@
   font-weight: 600;
 }
 
-.app-folder-name {
-  margin-right: auto;
-  color: var(--color-ink-dim);
-}
-
 .app-toolbar button {
   font: inherit;
   font-size: 12px;
@@ -37,6 +32,14 @@
 
 .app-toolbar button:hover {
   background: var(--color-hover);
+}
+
+.btn-settings {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px !important;
 }
 
 .app-main {

@@ -1,0 +1,88 @@
+.settings-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.settings-panel {
+  width: 420px;
+  max-width: calc(100% - 32px);
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-editor-bg);
+  color: var(--color-ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.settings-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.settings-panel-header button {
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-ink-dim);
+  cursor: pointer;
+}
+
+.settings-panel-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-panel-label {
+  font-size: 12px;
+  color: var(--color-ink-dim);
+}
+
+.settings-panel-error {
+  font-size: 12px;
+  color: var(--color-accent);
+}
+
+.settings-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-panel-footer button {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-sidebar-bg);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.settings-panel-footer button:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.settings-panel-footer button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

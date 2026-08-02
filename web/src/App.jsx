@@ -2,13 +2,13 @@ import React, { useRef, useState } from 'react'
 import SidebarTree from './components/SidebarTree'
 import Pane from './components/Pane'
 import SplitContainer from './components/SplitContainer'
-import { useWorkspace } from './workspace/useWorkspace'
+import SettingsPanel from './components/SettingsPanel'
 import { PaneManager } from './panes/PaneManager'
 import './theme/tokens.css'
 import './App.css'
 
 function App() {
-  const { folderHandle, tree, isSupported, isScanning, openFolder } = useWorkspace()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const paneManagerRef = useRef(null)
   if (paneManagerRef.current === null) {
@@ -19,15 +19,7 @@ function App() {
   const [, bumpVersion] = useState(0)
   const rerender = () => bumpVersion((n) => n + 1)
 
-  const [activePaneId, setActivePaneId] = useState(paneManager.panes[0].id)
-  const effectiveActivePaneId = paneManager.panes.some((p) => p.id === activePaneId)
-    ? activePaneId
-    : paneManager.panes[0].id
-
-  async function handleSelectFile(fileHandle) {
-    await paneManager.openFile(effectiveActivePaneId, fileHandle)
-    rerender()
-  }
+  const [, setActivePaneId] = useState(paneManager.panes[0].id)
 
   async function handleSplit(paneId) {
     await paneManager.splitRight(paneId)
@@ -48,32 +40,22 @@ function App() {
     <div className="app-shell">
       <header className="app-toolbar">
         <span className="app-title">Markdown Viewer</span>
-        {folderHandle && <span className="app-folder-name">{folderHandle.name}</span>}
         <button
           type="button"
-          className="btn-open-folder"
-          onClick={openFolder}
+          className="btn-settings"
+          aria-label="Settings"
+          onClick={() => setSettingsOpen(true)}
         >
-          Open Folder
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
         </button>
       </header>
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
       <div className="app-main">
         <aside className="app-sidebar">
-          {!isSupported ? (
-            <SidebarTree tree={null} status="unsupported" onSelectFile={() => {}} />
-          ) : (
-            isScanning ? (
-              <SidebarTree tree={null} status="loading" onSelectFile={() => {}} />
-            ) : (
-              tree && (
-                <SidebarTree
-                  tree={tree}
-                  status={tree.children.length === 0 ? 'empty' : 'ready'}
-                  onSelectFile={handleSelectFile}
-                />
-              )
-            )
-          )}
+          <SidebarTree tree={null} status="empty" onSelectFile={() => {}} />
         </aside>
         <div className="app-content">
           <SplitContainer

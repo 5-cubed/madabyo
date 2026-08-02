@@ -1,0 +1,64 @@
+.path-autocomplete {
+  position: relative;
+}
+
+.path-autocomplete-input {
+  font: inherit;
+  font-size: 13px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-editor-bg);
+  color: var(--color-ink);
+  box-sizing: border-box;
+}
+
+.path-autocomplete-input:focus {
+  outline: 1px solid var(--color-accent);
+}
+
+.path-autocomplete-error {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-accent);
+}
+
+.path-autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-sidebar-bg);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.path-autocomplete-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.path-autocomplete-dropdown button:hover {
+  background: var(--color-hover);
+}
+
+.path-autocomplete-overflow {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--color-ink-dim);
+}
