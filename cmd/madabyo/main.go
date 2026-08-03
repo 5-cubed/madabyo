@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -8,6 +10,8 @@ import (
 
 	"madabyo/internal/server"
 )
+
+const defaultPort = 4800
 
 func configPath() string {
 	dir, err := os.UserConfigDir()
@@ -19,6 +23,10 @@ func configPath() string {
 }
 
 func main() {
+	port := flag.Int("port", defaultPort, "HTTP server port")
+	flag.IntVar(port, "p", defaultPort, "HTTP server port (shorthand)")
+	flag.Parse()
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Printf("warning: could not determine working directory (%v), falling back to \".\"", err)
@@ -29,7 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	addr := ":8765"
+	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("madabyo listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, h))
 }
