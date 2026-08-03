@@ -37,35 +37,53 @@ function entriesToNodes(entries, basePath) {
     .filter((n) => n !== null)
 }
 
+// Helper: recursively find and merge a node at a specific path
+function findAndMergeNode(node, targetPath, newEntries) {
+  if (!node || node.type === 'file') {
+    return node
+  }
+
+  // If this is the target node, merge the new entries into its children
+  if (node.path === targetPath) {
+    const newNodes = entriesToNodes(newEntries, targetPath)
+    if (!node.children) {
+      node.children = newNodes
+      return node
+    }
+
+    // Match new entries against existing by path
+    const nodesByPath = {}
+    node.children.forEach((child) => {
+      nodesByPath[child.path] = child
+    })
+
+    node.children = newNodes.map((newNode) => {
+      const existing = nodesByPath[newNode.path]
+      if (existing && existing.type === 'dir' && existing.children) {
+        // Preserve the directory's expanded state
+        newNode.children = existing.children
+      }
+      return newNode
+    })
+
+    return node
+  }
+
+  // If this is not the target, recursively search children
+  if (node.children) {
+    node.children = node.children.map((child) => findAndMergeNode(child, targetPath, newEntries))
+  }
+
+  return node
+}
+
 // Helper: merge new list results into existing tree, preserving expansion state
 function mergeTreeNode(existing, newEntries, path) {
   if (!existing || existing.type === 'file') {
     return existing
   }
 
-  // Merge: new entries replace old ones at this level, but preserve deeper state
-  const newNodes = entriesToNodes(newEntries, path)
-  if (!existing.children) {
-    existing.children = newNodes
-    return existing
-  }
-
-  // Match new entries against existing by path
-  const nodesByPath = {}
-  existing.children.forEach((node) => {
-    nodesByPath[node.path] = node
-  })
-
-  existing.children = newNodes.map((newNode) => {
-    const existing = nodesByPath[newNode.path]
-    if (existing && existing.type === 'dir' && existing.children) {
-      // Preserve the directory's expanded state
-      newNode.children = existing.children
-    }
-    return newNode
-  })
-
-  return existing
+  return findAndMergeNode(existing, path, newEntries)
 }
 
 function App() {
