@@ -221,3 +221,18 @@
   color: var(--color-ink-dim);
   font-size: 13px;
 }
+
+.diagram-error {
+  padding: 12px 16px;
+  background: var(--color-editor-bg);
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-ink);
+}
+
+.diagram-error pre {
+  font-family: monospace;
+  background: var(--color-sidebar-bg);
+  padding: 10px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
