@@ -5,6 +5,22 @@ All notable changes to madabyo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-03
+
+### Features
+- render mermaid/puml fenced code blocks as inline SVG via async marked extension
+- add diagramRenderer for lazy client-side mermaid/plantuml rendering
+
+### Fixes
+- normalize plantuml onError string to Error so a bad diagram can't blank the doc
+
+### Chores
+- add mermaid and @plantuml/core dependencies for client-side diagram rendering
+
+### Other
+- Merge branch 'feature/uml-rendering' into main
+- style: add .diagram-error styling for failed diagram renders
+
 ## [0.4.0] - 2026-08-03
 
 ### Other
