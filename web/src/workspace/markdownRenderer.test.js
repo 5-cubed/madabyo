@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { marked } from 'marked';
 import * as MarkdownRenderer from './markdownRenderer.js';
+import { renderDiagram } from './diagramRenderer.js';
+
+vi.mock('./diagramRenderer.js', () => ({ renderDiagram: vi.fn() }));
 
 describe('MarkdownRenderer', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -79,5 +82,57 @@ describe('MarkdownRenderer', () => {
 
     const result = await MarkdownRenderer.renderFile('/path/to/network-fail.md');
     expect(result).toEqual({ status: 'not-found' });
+  });
+
+  // Test: mermaid and puml fences both produce SVG-bearing output
+  it('renders mermaid and puml fences as SVG diagrams', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '# Title\n\n```mermaid\ngraph LR\nA --> B\n```\n\n```puml\n@startuml\nA -> B\n@enduml\n```',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+    renderDiagram.mockResolvedValueOnce('<svg mermaid></svg>');
+    renderDiagram.mockResolvedValueOnce('<svg puml></svg>');
+
+    const result = await MarkdownRenderer.renderFile('/path/to/diagrams.md');
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<svg');
+    expect(result.html).toContain('diagram');
+  });
+
+  // Test: error isolation — one failed diagram doesn't blank the rest
+  it('handles diagram errors without blanking the rest of the document', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '# Heading\n\n```mermaid\nbad diagram\n```\n\n```puml\n@startuml\nA -> B\n@enduml\n```\n\nTrailing text.',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+    renderDiagram.mockRejectedValueOnce(new Error('bad diagram'));
+    renderDiagram.mockResolvedValueOnce('<svg puml></svg>');
+
+    const result = await MarkdownRenderer.renderFile('/path/to/mixed.md');
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('Heading');
+    expect(result.html).toContain('diagram-error');
+    expect(result.html).toContain('bad diagram'); // raw source in error
+    expect(result.html).toContain('<svg');
+    expect(result.html).toContain('Trailing text');
+  });
+
+  // Test: non-diagram code fences pass through unchanged
+  it('does not call renderDiagram for non-diagram code fences', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '```js\ncode()\n```',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await MarkdownRenderer.renderFile('/path/to/code.md');
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<pre><code');
+    expect(renderDiagram).not.toHaveBeenCalled();
   });
 });
