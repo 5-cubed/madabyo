@@ -20,9 +20,10 @@ export async function renderDiagram(lang, source) {
     });
 
     // Import and call renderToString (callback-based, not promise)
+    // renderToString's onError delivers a plain string, not an Error — normalize it
     const { renderToString } = await import('@plantuml/core');
     return new Promise((resolve, reject) =>
-      renderToString(source.split('\n'), resolve, reject)
+      renderToString(source.split('\n'), resolve, (msg) => reject(new Error(msg)))
     );
   }
 }

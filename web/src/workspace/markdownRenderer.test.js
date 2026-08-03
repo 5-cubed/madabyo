@@ -121,6 +121,25 @@ describe('MarkdownRenderer', () => {
     expect(result.html).toContain('Trailing text');
   });
 
+  // Test: a non-Error rejection (e.g. a raw string) must not blank the document.
+  // Guards the real failure shape: @plantuml/core's onError delivers a plain string.
+  it('survives a diagram rejection that is a bare string, not an Error', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '# Heading\n\n```puml\n@startuml\nbad\n@enduml\n```\n\nTrailing text.',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+    renderDiagram.mockRejectedValueOnce('raw string failure');
+
+    const result = await MarkdownRenderer.renderFile('/path/to/string-err.md');
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('Heading');
+    expect(result.html).toContain('diagram-error');
+    expect(result.html).toContain('raw string failure');
+    expect(result.html).toContain('Trailing text');
+  });
+
   // Test: non-diagram code fences pass through unchanged
   it('does not call renderDiagram for non-diagram code fences', async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce({

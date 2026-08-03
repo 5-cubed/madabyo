@@ -22,7 +22,7 @@ marked.use({
         token.text = `<div class="diagram">${svg}</div>`;
       } catch (err) {
         token.type = 'html';
-        token.text = `<div class="diagram-error"><p>${escapeHtml(err.message)}</p><pre>${escapeHtml(token.text)}</pre></div>`;
+        token.text = `<div class="diagram-error"><p>${escapeHtml(err?.message ?? String(err))}</p><pre>${escapeHtml(token.text)}</pre></div>`;
       }
     }
   },

@@ -78,7 +78,9 @@ describe('diagramRenderer', () => {
       );
     });
 
-    it('propagates puml render errors via onError callback', async () => {
+    it('normalizes puml onError string into an Error', async () => {
+      // renderToString's onError delivers a plain string; renderDiagram must
+      // reject with an Error so the caller's err.message path works.
       mockRenderToString.mockImplementation((lines, onSuccess, onError) => {
         onError('PlantUML syntax error');
       });
@@ -86,6 +88,7 @@ describe('diagramRenderer', () => {
       await expect(renderDiagram('puml', 'bad puml')).rejects.toThrow(
         'PlantUML syntax error'
       );
+      await expect(renderDiagram('puml', 'bad puml')).rejects.toBeInstanceOf(Error);
     });
 
     it('skips viz-global script load when globalThis.Viz already set', async () => {
