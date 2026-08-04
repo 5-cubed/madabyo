@@ -11,13 +11,19 @@ function escapeHtml(text) {
   return text.replace(/[&<>]/g, (char) => map[char]);
 }
 
+// Map fence aliases to a canonical engine name
+const DIAGRAM_ENGINES = { mermaid: 'mermaid', puml: 'puml', plantuml: 'puml' };
+
 // Register marked extension once at module scope
 marked.use({
   async: true,
   walkTokens: async (token) => {
-    if (token.type === 'code' && ['mermaid', 'puml'].includes(token.lang)) {
+    // marked keeps the whole fence info line as token.lang (e.g. 'puml @startuml'),
+    // so match on the first whitespace-delimited word and resolve aliases.
+    const engine = token.type === 'code' && DIAGRAM_ENGINES[token.lang?.split(/\s+/)[0]];
+    if (engine) {
       try {
-        const svg = await renderDiagram(token.lang, token.text);
+        const svg = await renderDiagram(engine, token.text);
         token.type = 'html';
         token.text = `<div class="diagram">${svg}</div>`;
       } catch (err) {

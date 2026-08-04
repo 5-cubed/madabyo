@@ -101,6 +101,38 @@ describe('MarkdownRenderer', () => {
     expect(result.html).toContain('diagram');
   });
 
+  // Test: 'plantuml' alias renders as a diagram (routed to the puml engine)
+  it('renders a plantuml-aliased fence via the puml engine', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '```plantuml\n@startuml\nA -> B\n@enduml\n```',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+    renderDiagram.mockResolvedValueOnce('<svg puml></svg>');
+
+    const result = await MarkdownRenderer.renderFile('/path/to/alias.md');
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<svg');
+    expect(renderDiagram).toHaveBeenCalledWith('puml', '@startuml\nA -> B\n@enduml');
+  });
+
+  // Test: extra text after the lang tag still resolves to a diagram
+  it('renders when extra text follows the fence lang (```puml @startuml)', async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        content: '```puml @startuml\nA -> B\n@enduml\n```',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+    renderDiagram.mockResolvedValueOnce('<svg puml></svg>');
+
+    const result = await MarkdownRenderer.renderFile('/path/to/extra.md');
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<svg');
+    expect(renderDiagram).toHaveBeenCalledWith('puml', 'A -> B\n@enduml');
+  });
+
   // Test: error isolation — one failed diagram doesn't blank the rest
   it('handles diagram errors without blanking the rest of the document', async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce({
