@@ -213,6 +213,56 @@
   overflow-x: auto;
 }
 
+.pane-content table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  /* ponytail: p selector excluded to avoid shifting mermaid labels in <foreignObject>; if p rule added, remove htmlLabels workaround and override in diagramRenderer */
+  /* ponytail: display: block breaks width: 100%; upgrade to marked renderer override wrapping tables in a scroll container */
+}
+
+.pane-content th,
+.pane-content td {
+  border: 1px solid var(--color-border);
+  padding: 8px 12px;
+}
+
+.pane-content th {
+  background: var(--color-sidebar-bg);
+  font-weight: 600;
+}
+
+.pane-content blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 12px;
+  margin-left: 0;
+  color: var(--color-ink-dim);
+}
+
+.pane-content hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 16px 0;
+}
+
+.pane-content ul,
+.pane-content ol {
+  margin-left: 24px;
+}
+
+.pane-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.pane-content h4,
+.pane-content h5,
+.pane-content h6 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
 .pane-empty,
 .pane-error {
   display: flex;
