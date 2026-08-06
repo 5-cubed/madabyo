@@ -42,7 +42,8 @@ describe('MarkdownRenderer', () => {
     expect(result.status).toBe('ok');
     expect(result.html).toContain('<h2>Section</h2>');
     expect(result.html).toContain('<li>item</li>');
-    expect(result.html).toContain('<pre><code');
+    expect(result.html).toContain('<pre');
+    expect(result.html).toContain('<code');
   });
 
   // Test: render-error for parser exception
@@ -183,7 +184,8 @@ describe('MarkdownRenderer', () => {
 
     const result = await MarkdownRenderer.renderFile('/path/to/code.md');
     expect(result.status).toBe('ok');
-    expect(result.html).toContain('<pre><code');
+    expect(result.html).toContain('<pre');
+    expect(result.html).toContain('<code');
     expect(renderDiagram).not.toHaveBeenCalled();
   });
 });

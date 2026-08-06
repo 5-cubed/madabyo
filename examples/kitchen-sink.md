@@ -13,11 +13,41 @@ Test document for all markdown elements.
 
 Inline `code` styling with `var(--color-sidebar-bg)` background.
 
-```javascript
-// Code block with overflow-x: auto
+```js
+// JavaScript with syntax highlighting
 function longFunctionNameThatExceedsNormalWidth() {
   return "this is a really long line that should trigger horizontal scrolling in narrow panes";
 }
+```
+
+```go
+// Go code with syntax highlighting
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Println("Hello, World!")
+}
+```
+
+```python
+# Python code with syntax highlighting
+def fibonacci(n):
+  if n <= 1:
+    return n
+  return fibonacci(n-1) + fibonacci(n-2)
+```
+
+```text
+Plain text fence — should render without syntax highlighting.
+No colors, just plain <pre><code> output.
+```
+
+```unknown-lang
+This fence uses an unknown language.
+Should fall back to plain text rendering.
+No syntax highlighting attempted.
 ```
 
 ## Tables
@@ -72,6 +102,21 @@ Wide table demonstrating horizontal scrolling:
 ![Alt text for sample image](https://via.placeholder.com/400x200)
 
 A paragraph after the image.
+
+## Diagrams
+
+### Mermaid
+
+```mermaid
+graph LR
+  A["Markdown<br/>Input"] --> B["Marked<br/>Parser"]
+  B --> C["walkTokens<br/>Extension"]
+  C --> D{"Fence<br/>Type"}
+  D -->|Diagram| E["Shiki<br/>Highlighter"]
+  D -->|Code| F["Plain<br/>Code Block"]
+  E --> G["Colored<br/>HTML"]
+  F --> G
+```
 
 ## Combined Elements
 
