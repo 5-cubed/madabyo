@@ -217,6 +217,17 @@ function App() {
                   }
                   return prev
                 })
+              } else {
+                // Post to /api/log when a remembered folder cannot be listed
+                try {
+                  await fetch('/api/log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ level: 'error', message: `Cannot list folder: ${path}` })
+                  })
+                } catch (logErr) {
+                  console.error('Failed to log dropped folder:', logErr)
+                }
               }
             } catch (err) {
               console.error(`Failed to restore folder ${path}:`, err)

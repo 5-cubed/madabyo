@@ -3,7 +3,9 @@ package server
 import (
 	"encoding/json"
 	"io/fs"
+	"log"
 	"net/http"
+	"os"
 
 	"madabyo/internal/workspace/external"
 	"madabyo/internal/workspace/usecase"
@@ -19,6 +21,7 @@ func New(configPath string, cwd string) (http.Handler, error) {
 	lister := external.OSDirLister{}
 	store := external.JSONFileConfigStore{Path: configPath}
 	fileReader := external.OSFileReader{}
+	logger := log.New(os.Stderr, "", log.LstdFlags)
 
 	// Ensure default workspace is set if config is empty
 	if err := (usecase.SettingsUsecase{}).EnsureDefaultWorkspace(store, cwd); err != nil {
@@ -33,7 +36,9 @@ func New(configPath string, cwd string) (http.Handler, error) {
 	mux.HandleFunc("/api/list", handleList(lister))
 	mux.HandleFunc("/api/file", handleFile(fileReader))
 	mux.HandleFunc("/api/settings", handleSettings(store, lister))
+	mux.HandleFunc("/api/log", handleLog(logger))
 	mux.Handle("/", http.FileServer(http.FS(dist)))
 
-	return hostCheckMiddleware(mux), nil
+	handler := newLoggingMiddleware(mux, logger)
+	return hostCheckMiddleware(handler), nil
 }
