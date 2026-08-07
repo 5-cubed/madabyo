@@ -169,7 +169,11 @@ function App() {
       if (path !== workspacePath) {
         setExpandedPaths((prev) => {
           if (!prev.includes(path)) {
-            const updated = [...prev, path]
+            let updated = [...prev, path]
+            // Cap at 100; drop least-recently-opened (first item)
+            if (updated.length > 100) {
+              updated = updated.slice(1)
+            }
             if (workspacePath) {
               localStorage.setItem(`madabyo:sidebar:${workspacePath}`, JSON.stringify(updated))
             }
