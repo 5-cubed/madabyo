@@ -107,7 +107,8 @@ function App() {
   // Tree state
   const [tree, setTree] = useState(null)
   const [treeStatus, setTreeStatus] = useState('loading')
-  const [expandedPaths, setExpandedPaths] = useState(new Set())
+  const [expandedPaths, setExpandedPaths] = useState([])
+  const [workspacePath, setWorkspacePath] = useState(null)
 
   // Load workspace settings and initialize tree
   async function loadTree() {
@@ -119,6 +120,8 @@ function App() {
         setTreeStatus('empty')
         return
       }
+
+      setWorkspacePath(settings.workspacePath)
 
       // Load root tree
       const listRes = await fetch(`/api/list?path=${encodeURIComponent(settings.workspacePath)}`)
@@ -148,6 +151,26 @@ function App() {
     loadTree()
   }, [])
 
+  // Restore expanded folders after tree loads
+  useEffect(() => {
+    if (treeStatus === 'ready' && workspacePath && expandedPaths.length === 0) {
+      const saved = localStorage.getItem(`madabyo:sidebar:${workspacePath}`)
+      if (saved) {
+        const savedPaths = JSON.parse(saved)
+        ;(async () => {
+          // ponytail: sequential, one request per folder; upgrade path is a batch endpoint if it ever gets slow
+          for (const path of savedPaths) {
+            try {
+              await handleExpandDir(path)
+            } catch (err) {
+              console.error(`Failed to restore folder ${path}:`, err)
+            }
+          }
+        })()
+      }
+    }
+  }, [treeStatus, workspacePath])
+
   // Handle directory expansion
   const handleExpandDir = async (path) => {
     try {
@@ -166,7 +189,16 @@ function App() {
         return merged
       })
 
-      setExpandedPaths((prev) => new Set([...prev, path]))
+      setExpandedPaths((prev) => {
+        if (!prev.includes(path)) {
+          const updated = [...prev, path]
+          if (workspacePath) {
+            localStorage.setItem(`madabyo:sidebar:${workspacePath}`, JSON.stringify(updated))
+          }
+          return updated
+        }
+        return prev
+      })
     } catch (err) {
       console.error(`Failed to expand ${path}:`, err)
       throw err
