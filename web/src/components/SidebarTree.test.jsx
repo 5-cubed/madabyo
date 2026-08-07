@@ -65,7 +65,10 @@ describe('SidebarTree', () => {
   })
 
   it('should render a multi-level tree correctly when expanded', async () => {
-    const { container } = render(
+    const handleExpandDir = vi.fn()
+    let expandedPaths = []
+
+    const { rerender, container } = render(
       <SidebarTree
         tree={{
           type: 'dir',
@@ -87,18 +90,47 @@ describe('SidebarTree', () => {
           ]
         }}
         status="ready"
+        expandedPaths={expandedPaths}
         onSelectFile={() => {}}
-        onExpandDir={() => {}}
+        onExpandDir={(path) => {
+          handleExpandDir(path)
+          if (!expandedPaths.includes(path)) {
+            expandedPaths = [...expandedPaths, path]
+            rerender(
+              <SidebarTree
+                tree={{
+                  type: 'dir',
+                  name: 'root',
+                  path: '/tmp/root',
+                  children: [
+                    {
+                      type: 'dir',
+                      name: 'docs',
+                      path: '/tmp/root/docs',
+                      children: [
+                        {
+                          type: 'file',
+                          name: 'api.md',
+                          path: '/tmp/root/docs/api.md'
+                        }
+                      ]
+                    }
+                  ]
+                }}
+                status="ready"
+                expandedPaths={expandedPaths}
+                onSelectFile={() => {}}
+                onExpandDir={handleExpandDir}
+              />
+            )
+          }
+        }}
       />
     )
 
     expect(screen.getByText('root')).toBeInTheDocument()
 
-    // Click the root folder to expand it
-    const chevrons = container.querySelectorAll('.chevron')
-    fireEvent.click(chevrons[0])
-
-    // Now docs should be visible
+    // Root is always expanded, so docs should be visible immediately
     const docs = await screen.findByText('docs')
     expect(docs).toBeInTheDocument()
 

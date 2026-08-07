@@ -9,36 +9,31 @@ const ICONS = {
   markdown: `${ICON_BASE}/file_type_markdown.svg`
 }
 
-function TreeNode({ node, selectedPath, onSelectFile, onExpandDir }) {
+function TreeNode({ node, selectedPath, onSelectFile, onExpandDir, expandedPaths = [], isRoot = false }) {
   const isDir = node.type === 'dir'
-  const [collapsed, setCollapsed] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const isExpanded = !collapsed && node.children !== undefined
+  const isExpanded = (isRoot || expandedPaths.includes(node.path)) && node.children !== undefined
 
   const handleExpandClick = async () => {
-    if (collapsed) {
-      // First time expanding - if children undefined, fetch them
-      if (node.children === undefined) {
-        setLoading(true)
-        try {
-          await onExpandDir(node.path)
-        } catch (err) {
-          setError(err.message || 'Failed to load directory')
-        } finally {
-          setLoading(false)
-        }
+    if (!isExpanded) {
+      setLoading(true)
+      try {
+        await onExpandDir(node.path)
+      } catch (err) {
+        setError(err.message || 'Failed to load directory')
+      } finally {
+        setLoading(false)
       }
     }
-    setCollapsed((c) => !c)
   }
 
   if (isDir) {
     return (
       <div className="tree-node">
         <div className="tree-row" onClick={handleExpandClick}>
-          <span className={collapsed ? 'chevron' : 'chevron open'}>&#9656;</span>
-          <img src={collapsed ? ICONS.folderClosed : ICONS.folderOpen} alt="" />
+          <span className={isExpanded ? 'chevron open' : 'chevron'}>&#9656;</span>
+          <img src={isExpanded ? ICONS.folderOpen : ICONS.folderClosed} alt="" />
           <span>{node.name}</span>
           {loading && <span className="node-status">loading...</span>}
           {error && <span className="node-status error">{error}</span>}
@@ -52,6 +47,7 @@ function TreeNode({ node, selectedPath, onSelectFile, onExpandDir }) {
                 selectedPath={selectedPath}
                 onSelectFile={onSelectFile}
                 onExpandDir={onExpandDir}
+                expandedPaths={expandedPaths}
               />
             ))}
           </div>
@@ -73,7 +69,7 @@ function TreeNode({ node, selectedPath, onSelectFile, onExpandDir }) {
   )
 }
 
-export default function SidebarTree({ tree, status, onSelectFile, onExpandDir }) {
+export default function SidebarTree({ tree, status, expandedPaths = [], onSelectFile, onExpandDir }) {
   const [selectedPath, setSelectedPath] = useState(null)
 
   if (status === 'empty') {
@@ -105,6 +101,8 @@ export default function SidebarTree({ tree, status, onSelectFile, onExpandDir })
         selectedPath={selectedPath}
         onSelectFile={handleSelectFile}
         onExpandDir={onExpandDir}
+        expandedPaths={expandedPaths}
+        isRoot={true}
       />
     </div>
   )

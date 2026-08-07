@@ -147,31 +147,7 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    loadTree()
-  }, [])
-
-  // Restore expanded folders after tree loads
-  useEffect(() => {
-    if (treeStatus === 'ready' && workspacePath && expandedPaths.length === 0) {
-      const saved = localStorage.getItem(`madabyo:sidebar:${workspacePath}`)
-      if (saved) {
-        const savedPaths = JSON.parse(saved)
-        ;(async () => {
-          // ponytail: sequential, one request per folder; upgrade path is a batch endpoint if it ever gets slow
-          for (const path of savedPaths) {
-            try {
-              await handleExpandDir(path)
-            } catch (err) {
-              console.error(`Failed to restore folder ${path}:`, err)
-            }
-          }
-        })()
-      }
-    }
-  }, [treeStatus, workspacePath])
-
-  // Handle directory expansion
+  // Handle directory expansion (defined early to avoid closure issues)
   const handleExpandDir = async (path) => {
     try {
       const listRes = await fetch(`/api/list?path=${encodeURIComponent(path)}`)
@@ -189,21 +165,63 @@ function App() {
         return merged
       })
 
-      setExpandedPaths((prev) => {
-        if (!prev.includes(path)) {
-          const updated = [...prev, path]
-          if (workspacePath) {
-            localStorage.setItem(`madabyo:sidebar:${workspacePath}`, JSON.stringify(updated))
+      // Only save non-root folders to expandedPaths
+      if (path !== workspacePath) {
+        setExpandedPaths((prev) => {
+          if (!prev.includes(path)) {
+            const updated = [...prev, path]
+            if (workspacePath) {
+              localStorage.setItem(`madabyo:sidebar:${workspacePath}`, JSON.stringify(updated))
+            }
+            return updated
           }
-          return updated
-        }
-        return prev
-      })
+          return prev
+        })
+      }
     } catch (err) {
       console.error(`Failed to expand ${path}:`, err)
       throw err
     }
   }
+
+  useEffect(() => {
+    loadTree()
+  }, [])
+
+  // Restore expanded folders after tree loads
+  useEffect(() => {
+    if (treeStatus === 'ready' && workspacePath && expandedPaths.length === 0) {
+      const saved = localStorage.getItem(`madabyo:sidebar:${workspacePath}`)
+      if (saved) {
+        const savedPaths = JSON.parse(saved)
+        ;(async () => {
+          // ponytail: sequential, one request per folder; upgrade path is a batch endpoint if it ever gets slow
+          for (const path of savedPaths) {
+            try {
+              const listRes = await fetch(`/api/list?path=${encodeURIComponent(path)}`)
+              const listResult = await listRes.json()
+
+              if (!listResult.error) {
+                setTree((prevTree) => {
+                  if (!prevTree) return prevTree
+                  return mergeTreeNode({ ...prevTree }, listResult.entries || [], path)
+                })
+
+                setExpandedPaths((prev) => {
+                  if (!prev.includes(path)) {
+                    return [...prev, path]
+                  }
+                  return prev
+                })
+              }
+            } catch (err) {
+              console.error(`Failed to restore folder ${path}:`, err)
+            }
+          }
+        })()
+      }
+    }
+  }, [treeStatus, workspacePath])
 
   // Polling: every 5 seconds
   useEffect(() => {
@@ -290,7 +308,7 @@ function App() {
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} onSaved={handleSettingsSaved} />}
       <div className="app-main">
         <aside className="app-sidebar">
-          <SidebarTree tree={tree} status={treeStatus} onSelectFile={(path) => {
+          <SidebarTree tree={tree} status={treeStatus} expandedPaths={expandedPaths} onSelectFile={(path) => {
             paneManager.openFile(activePaneId, path).then(rerender)
           }} onExpandDir={handleExpandDir} />
         </aside>
