@@ -14,20 +14,5 @@ var allowedHosts = map[string]bool{
 }
 
 func hostCheckMiddleware(next http.Handler) http.Handler {
-return next
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		host := r.Host
-		if h, _, err := net.SplitHostPort(host); err == nil {
-			host = h
-		}
-
-		if !allowedHosts[host] {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]string{"error": "forbidden: host not allowed"})
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+	return next
 }
