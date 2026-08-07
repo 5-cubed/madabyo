@@ -276,6 +276,120 @@ describe('Sidebar tree persistence', () => {
     expect(true).toBe(true)
   })
 
+  it('posts to /api/log when a remembered folder cannot be listed during restore', async () => {
+    const user = userEvent.setup({ delay: null })
+
+    // Mock fetch for API calls
+    let logCalls = []
+    global.fetch = vi.fn((url, options) => {
+      if (url.includes('/api/log')) {
+        logCalls.push(options?.body)
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({})
+        })
+      }
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: '/ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        const urlObj = new URL(url, 'http://localhost')
+        const path = urlObj.searchParams.get('path')
+        if (path === '/ws') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'docs', isDir: true }]
+            })
+          })
+        }
+        if (path === '/ws/docs') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'notes.md', isDir: false }]
+            })
+          })
+        }
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    // PART 1: First render, expand and save
+    const { unmount } = render(<App />)
+
+    await waitFor(() => {
+      expect(screen.queryByText('docs')).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    const docsElements = screen.queryAllByText('docs')
+    const docsRow = docsElements[0].closest('.tree-row')
+    await user.click(docsRow)
+
+    await waitFor(() => {
+      expect(screen.getByText('notes.md')).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    // Verify folder was saved
+    const saved = localStorage.getItem('madabyo:sidebar:/ws')
+    expect(saved).toBeDefined()
+
+    // PART 2: Unmount, then remount with docs folder returning error
+    unmount()
+    vi.clearAllMocks()
+    logCalls = []
+
+    global.fetch = vi.fn((url, options) => {
+      if (url.includes('/api/log')) {
+        logCalls.push(options?.body)
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({})
+        })
+      }
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: '/ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        const urlObj = new URL(url, 'http://localhost')
+        const path = urlObj.searchParams.get('path')
+        if (path === '/ws') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'docs', isDir: true }]
+            })
+          })
+        }
+        // docs folder now returns error
+        if (path === '/ws/docs') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              error: 'permission denied'
+            })
+          })
+        }
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    // Second render: should attempt to restore /ws/docs and fail
+    render(<App />)
+
+    // Wait for the restore attempt to complete
+    await waitFor(() => {
+      expect(logCalls.length).toBeGreaterThan(0)
+    }, { timeout: 3000 })
+
+    // Should have posted to /api/log with error level
+    const logBody = JSON.parse(logCalls[0])
+    expect(logBody.level).toBe('error')
+    expect(logBody.message).toContain('/ws/docs')
+  })
+
   it('saves one open folder to localStorage', async () => {
     const user = userEvent.setup({ delay: null })
 
