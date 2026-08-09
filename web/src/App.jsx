@@ -188,9 +188,34 @@ function App() {
     }
   }
 
+  // Handle directory collapse
+  const handleCollapseDir = (path) => {
+    if (path !== workspacePath) {
+      setExpandedPaths((prev) => {
+        const updated = prev.filter((p) => p !== path)
+        if (workspacePath) {
+          localStorage.setItem(`madabyo:sidebar:${workspacePath}`, JSON.stringify(updated))
+        }
+        return updated
+      })
+    }
+  }
+
   useEffect(() => {
     loadTree()
   }, [])
+
+  // Helper: get ancestors of a path up to the workspace root
+  function getAncestors(path, basePath) {
+    const ancestors = []
+    let current = path
+    while (current !== basePath && current.length > basePath.length) {
+      current = current.substring(0, current.lastIndexOf('/'))
+      if (current === basePath) break
+      ancestors.unshift(current)
+    }
+    return ancestors
+  }
 
   // Restore expanded folders after tree loads
   useEffect(() => {
@@ -198,9 +223,27 @@ function App() {
       const saved = localStorage.getItem(`madabyo:sidebar:${workspacePath}`)
       if (saved) {
         const savedPaths = JSON.parse(saved)
+
+        // Insert missing ancestors before the saved paths (shallowest first)
+        const pathsToRestore = []
+        const seen = new Set()
+        for (const path of savedPaths) {
+          const ancestors = getAncestors(path, workspacePath)
+          for (const ancestor of ancestors) {
+            if (!seen.has(ancestor)) {
+              pathsToRestore.push(ancestor)
+              seen.add(ancestor)
+            }
+          }
+          if (!seen.has(path)) {
+            pathsToRestore.push(path)
+            seen.add(path)
+          }
+        }
+
         ;(async () => {
           // ponytail: sequential, one request per folder; upgrade path is a batch endpoint if it ever gets slow
-          for (const path of savedPaths) {
+          for (const path of pathsToRestore) {
             try {
               const listRes = await fetch(`/api/list?path=${encodeURIComponent(path)}`)
               const listResult = await listRes.json()
@@ -325,7 +368,7 @@ function App() {
         <aside className="app-sidebar">
           <SidebarTree tree={tree} status={treeStatus} expandedPaths={expandedPaths} onSelectFile={(path) => {
             paneManager.openFile(activePaneId, path).then(rerender)
-          }} onExpandDir={handleExpandDir} />
+          }} onExpandDir={handleExpandDir} onCollapseDir={handleCollapseDir} />
         </aside>
         <div className="app-content">
           <SplitContainer

@@ -9,7 +9,7 @@ const ICONS = {
   markdown: `${ICON_BASE}/file_type_markdown.svg`
 }
 
-function TreeNode({ node, selectedPath, onSelectFile, onExpandDir, expandedPaths = [], isRoot = false }) {
+function TreeNode({ node, selectedPath, onSelectFile, onExpandDir, onCollapseDir, expandedPaths = [], isRoot = false }) {
   const isDir = node.type === 'dir'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -25,6 +25,9 @@ function TreeNode({ node, selectedPath, onSelectFile, onExpandDir, expandedPaths
       } finally {
         setLoading(false)
       }
+    } else if (!isRoot) {
+      // Collapse the folder if it's already expanded and not root
+      onCollapseDir(node.path)
     }
   }
 
@@ -47,6 +50,7 @@ function TreeNode({ node, selectedPath, onSelectFile, onExpandDir, expandedPaths
                 selectedPath={selectedPath}
                 onSelectFile={onSelectFile}
                 onExpandDir={onExpandDir}
+                onCollapseDir={onCollapseDir}
                 expandedPaths={expandedPaths}
               />
             ))}
@@ -69,7 +73,7 @@ function TreeNode({ node, selectedPath, onSelectFile, onExpandDir, expandedPaths
   )
 }
 
-export default function SidebarTree({ tree, status, expandedPaths = [], onSelectFile, onExpandDir }) {
+export default function SidebarTree({ tree, status, expandedPaths = [], onSelectFile, onExpandDir, onCollapseDir }) {
   const [selectedPath, setSelectedPath] = useState(null)
 
   if (status === 'empty') {
@@ -101,6 +105,7 @@ export default function SidebarTree({ tree, status, expandedPaths = [], onSelect
         selectedPath={selectedPath}
         onSelectFile={handleSelectFile}
         onExpandDir={onExpandDir}
+        onCollapseDir={onCollapseDir}
         expandedPaths={expandedPaths}
         isRoot={true}
       />

@@ -225,8 +225,9 @@ describe('Sidebar tree persistence', () => {
     }, { timeout: 3000 })
   })
 
-  it('caps saved folders at 100, dropping least-recently-opened', async () => {
-    // Create a mock that generates paths on demand
+  it('restores ancestor folders before nested folders', async () => {
+    const user = userEvent.setup({ delay: null })
+
     global.fetch = vi.fn((url) => {
       if (url.includes('/api/settings')) {
         return Promise.resolve({
@@ -237,43 +238,196 @@ describe('Sidebar tree persistence', () => {
         const urlObj = new URL(url, 'http://localhost')
         const path = urlObj.searchParams.get('path')
         if (path === '/ws') {
-          // Generate 101 folders
-          const entries = Array.from({ length: 101 }, (_, i) => ({
-            name: `folder${i}`,
-            isDir: true
-          }))
           return Promise.resolve({
-            json: () => Promise.resolve({ entries })
+            json: () => Promise.resolve({
+              entries: [{ name: 'docs', isDir: true }]
+            })
           })
         }
-        // For any folder access
-        return Promise.resolve({
-          json: () => Promise.resolve({ entries: [] })
-        })
+        if (path === '/ws/docs') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'api', isDir: true }]
+            })
+          })
+        }
+        if (path === '/ws/docs/api') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'index.md', isDir: false }]
+            })
+          })
+        }
       }
       return Promise.reject(new Error('Unexpected fetch: ' + url))
     })
 
-    // Manually test the cap by simulating 101 folder expansions
-    const { rerender } = render(<App />)
+    // Simulate localStorage having only the nested folder (not the parent)
+    localStorage.setItem('madabyo:sidebar:/ws', JSON.stringify(['/ws/docs/api']))
 
-    // Simulate expanding 101 folders by manipulating state directly via mocking
-    // This is a simplified test - in real usage, users would click folders one by one
-    // The cap is enforced in handleExpandDir, so we test it implicitly through other tests
-    // For now, verify the logic is in place by checking one scenario
-    localStorage.clear()
+    render(<App />)
 
-    // Simulate what localStorage would look like with 101 folders
-    const hundredFolders = Array.from({ length: 100 }, (_, i) => `/ws/folder${i}`)
-    const hundredAndOne = [...hundredFolders, '/ws/folder100']
+    // Wait for index.md to appear (both parent and nested folder should open)
+    await waitFor(() => {
+      expect(screen.getByText('index.md')).toBeInTheDocument()
+    }, { timeout: 3000 })
+  })
 
-    // localStorage.setItem('madabyo:sidebar:/ws', JSON.stringify(hundredAndOne))
+  it('nested folder reopens when parent is re-expanded', async () => {
+    const user = userEvent.setup({ delay: null })
 
-    // When we open the 101st folder, the cap logic should drop the first one
-    // This is tested implicitly in the codebase through the setExpandedPaths logic
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: '/ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        const urlObj = new URL(url, 'http://localhost')
+        const path = urlObj.searchParams.get('path')
+        if (path === '/ws') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'docs', isDir: true }]
+            })
+          })
+        }
+        if (path === '/ws/docs') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'api', isDir: true }]
+            })
+          })
+        }
+        if (path === '/ws/docs/api') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'index.md', isDir: false }]
+            })
+          })
+        }
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
 
-    // For now, just verify that the test structure works
-    expect(true).toBe(true)
+    render(<App />)
+
+    // Expand docs
+    await waitFor(() => {
+      expect(screen.queryByText('docs')).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    let docsElements = screen.queryAllByText('docs')
+    let docsRow = docsElements[0].closest('.tree-row')
+    await user.click(docsRow)
+
+    // Expand api
+    await waitFor(() => {
+      expect(screen.queryByText('api')).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    docsElements = screen.queryAllByText('docs')
+    const apiElements = screen.queryAllByText('api')
+    const apiRow = apiElements[0].closest('.tree-row')
+    await user.click(apiRow)
+
+    // Wait for index.md
+    await waitFor(() => {
+      expect(screen.getByText('index.md')).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    // Close docs (first click on docs)
+    docsElements = screen.queryAllByText('docs')
+    docsRow = docsElements[0].closest('.tree-row')
+    await user.click(docsRow)
+
+    // Verify index.md disappeared
+    await waitFor(() => {
+      expect(screen.queryByText('index.md')).not.toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    // Re-expand docs (second click)
+    docsElements = screen.queryAllByText('docs')
+    docsRow = docsElements[0].closest('.tree-row')
+    await user.click(docsRow)
+
+    // Verify index.md reappears (nested folder reopened)
+    await waitFor(() => {
+      expect(screen.getByText('index.md')).toBeInTheDocument()
+    }, { timeout: 2000 })
+  })
+
+  it('collapses a folder when clicked when already open', async () => {
+    const user = userEvent.setup({ delay: null })
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: '/ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        const urlObj = new URL(url, 'http://localhost')
+        const path = urlObj.searchParams.get('path')
+        if (path === '/ws') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'docs', isDir: true }]
+            })
+          })
+        }
+        if (path === '/ws/docs') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'notes.md', isDir: false }]
+            })
+          })
+        }
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+
+    // Wait for docs to appear
+    await waitFor(() => {
+      expect(screen.queryByText('docs')).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    // Expand docs folder
+    const docsElements = screen.queryAllByText('docs')
+    const docsRow = docsElements[0].closest('.tree-row')
+    await user.click(docsRow)
+
+    // Wait for notes.md to appear
+    await waitFor(() => {
+      expect(screen.getByText('notes.md')).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    // Verify folder was saved to localStorage
+    let saved = localStorage.getItem('madabyo:sidebar:/ws')
+    expect(saved).toBeDefined()
+    let savedPaths = JSON.parse(saved)
+    expect(savedPaths).toEqual(['/ws/docs'])
+
+    // Click docs folder again to collapse it
+    const docsElements2 = screen.queryAllByText('docs')
+    const docsRow2 = docsElements2[0].closest('.tree-row')
+    await user.click(docsRow2)
+
+    // Wait for notes.md to disappear
+    await waitFor(() => {
+      expect(screen.queryByText('notes.md')).not.toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    // Verify folder was removed from localStorage
+    saved = localStorage.getItem('madabyo:sidebar:/ws')
+    if (saved) {
+      savedPaths = JSON.parse(saved)
+      expect(savedPaths).not.toContain('/ws/docs')
+    } else {
+      expect(saved).toBeNull()
+    }
   })
 
   it('posts to /api/log when a remembered folder cannot be listed during restore', async () => {
@@ -388,6 +542,61 @@ describe('Sidebar tree persistence', () => {
     const logBody = JSON.parse(logCalls[0])
     expect(logBody.level).toBe('error')
     expect(logBody.message).toContain('/ws/docs')
+  })
+
+  it('root folder stays open when clicked', async () => {
+    const user = userEvent.setup({ delay: null })
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: '/ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        const urlObj = new URL(url, 'http://localhost')
+        const path = urlObj.searchParams.get('path')
+        if (path === '/ws') {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              entries: [{ name: 'docs', isDir: true }]
+            })
+          })
+        }
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+
+    // Wait for root (ws) to appear
+    await waitFor(() => {
+      const wsElements = screen.queryAllByText('ws')
+      expect(wsElements.length).toBeGreaterThan(0)
+    }, { timeout: 2000 })
+
+    // Get initial docs visibility (should be visible)
+    let docsElements = screen.queryAllByText('docs')
+    expect(docsElements.length).toBeGreaterThan(0)
+
+    // Click root folder (ws)
+    const wsElements = screen.queryAllByText('ws')
+    const wsRow = wsElements[0].closest('.tree-row')
+    await user.click(wsRow)
+
+    // Click root again
+    docsElements = screen.queryAllByText('docs')
+    const docsRow = docsElements[0]?.closest('.tree-row')
+    if (docsRow) {
+      // If docs is visible, root is still open
+      expect(docsRow).toBeTruthy()
+    }
+
+    // Verify docs is still visible (root folder cannot close)
+    await waitFor(() => {
+      docsElements = screen.queryAllByText('docs')
+      expect(docsElements.length).toBeGreaterThan(0)
+    }, { timeout: 2000 })
   })
 
   it('saves one open folder to localStorage', async () => {
