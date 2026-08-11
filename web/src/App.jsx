@@ -9,7 +9,8 @@ import './App.css'
 
 // Helper: check if a file is allowed (matches allowlist)
 function isAllowedMarkdownFile(name) {
-  const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
+  const dotIndex = name.lastIndexOf('.')
+  const ext = dotIndex === -1 ? '' : name.substring(dotIndex).toLowerCase()
   if (ext === '.md' || ext === '.markdown') {
     return true
   }
@@ -328,6 +329,24 @@ function App() {
     return () => clearInterval(pollInterval)
   }, [treeStatus, tree, expandedPaths, activePaneId, paneManager])
 
+  async function handleFollowLink(pane, href) {
+    const activeFileId = pane.tabManager.activeTabId
+    const dir = activeFileId.slice(0, activeFileId.lastIndexOf('/'))
+    const resolved = new URL(href, `file://${dir}/`).pathname
+    const name = resolved.slice(resolved.lastIndexOf('/') + 1)
+    if (!isAllowedMarkdownFile(name)) return
+
+    const root = workspacePath.endsWith('/') ? workspacePath : `${workspacePath}/`
+    if (!resolved.startsWith(root)) {
+      pane.tabManager.openTab(resolved, { status: 'blocked' })
+      rerender()
+      return
+    }
+
+    await paneManager.openFile(pane.id, resolved)
+    rerender()
+  }
+
   async function handleSplit(paneId) {
     await paneManager.splitRight(paneId)
     rerender()
@@ -400,6 +419,7 @@ function App() {
                     pane.tabManager.closeTab(fileId)
                     rerender()
                   }}
+                  onFollowLink={(href) => handleFollowLink(pane, href)}
                 />
               </div>
             ))}
