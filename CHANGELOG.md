@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - 2026-08-11
 
+### Documentation
+- spec and CHANGELOG for follow-markdown-links
+
+### Other
+- RED/GREEN: link resolution, workspace guard, and isAllowedMarkdownFile fix
+- RED/GREEN: click delegation for markdown links in Pane.jsx
+
+## [0.8.0] - 2026-08-11
+
 ### Added
 - Follow relative markdown links as in-app tabs
 
