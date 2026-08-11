@@ -156,4 +156,60 @@ describe('Pane', () => {
     fireEvent.click(closeButtons[1]);
     expect(onCloseTabSpy).toHaveBeenCalledWith('/repo/other/notes.md');
   });
+
+  // Link following: relative markdown link
+  it('calls onFollowLink when clicking a relative markdown link', () => {
+    const onFollowLinkSpy = vi.fn();
+    render(
+      <Pane
+        tabs={[{ fileId: 'notes.md', renderResult: { status: 'ok', html: '<a href="other.md">x</a>' } }]}
+        activeTabId="notes.md"
+        onSelectTab={() => {}}
+        onCloseTab={() => {}}
+        onFollowLink={onFollowLinkSpy}
+      />
+    );
+    fireEvent.click(screen.getByRole('link'));
+    expect(onFollowLinkSpy).toHaveBeenCalledOnce();
+    expect(onFollowLinkSpy).toHaveBeenCalledWith('other.md');
+  });
+
+  // Link following: external HTTPS link
+  it('opens external HTTPS link in new window without calling onFollowLink', () => {
+    const onFollowLinkSpy = vi.fn();
+    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    render(
+      <Pane
+        tabs={[{ fileId: 'notes.md', renderResult: { status: 'ok', html: '<a href="https://example.com">x</a>' } }]}
+        activeTabId="notes.md"
+        onSelectTab={() => {}}
+        onCloseTab={() => {}}
+        onFollowLink={onFollowLinkSpy}
+      />
+    );
+    fireEvent.click(screen.getByRole('link'));
+    expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer');
+    expect(onFollowLinkSpy).not.toHaveBeenCalled();
+    windowOpenSpy.mockRestore();
+  });
+
+  // Link following: mailto and anchor links
+  it('does nothing for mailto and same-page anchor links', () => {
+    const onFollowLinkSpy = vi.fn();
+    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    render(
+      <Pane
+        tabs={[{ fileId: 'notes.md', renderResult: { status: 'ok', html: '<a href="mailto:a@b.com">mail</a><a href="#section">anchor</a>' } }]}
+        activeTabId="notes.md"
+        onSelectTab={() => {}}
+        onCloseTab={() => {}}
+        onFollowLink={onFollowLinkSpy}
+      />
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'mail' }));
+    fireEvent.click(screen.getByRole('link', { name: 'anchor' }));
+    expect(onFollowLinkSpy).not.toHaveBeenCalled();
+    expect(windowOpenSpy).not.toHaveBeenCalled();
+    windowOpenSpy.mockRestore();
+  });
 });
