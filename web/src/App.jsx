@@ -21,6 +21,11 @@ function isAllowedMarkdownFile(name) {
   return false
 }
 
+// Helper: normalize backslashes to forward slashes for cross-platform path handling
+function normalizeSlashes(p) {
+  return p.replace(/\\/g, '/')
+}
+
 // Helper: convert API list entries to tree nodes
 function entriesToNodes(entries, basePath) {
   return entries
@@ -330,19 +335,21 @@ function App() {
   }, [treeStatus, tree, expandedPaths, activePaneId, paneManager])
 
   async function handleFollowLink(pane, href) {
-    const activeFileId = pane.tabManager.activeTabId
-    const dir = activeFileId.slice(0, activeFileId.lastIndexOf('/'))
-    const resolved = new URL(href, `file://${dir}/`).pathname
-    const name = resolved.slice(resolved.lastIndexOf('/') + 1)
+    const nid = normalizeSlashes(pane.tabManager.activeTabId)
+    const dir = nid.slice(0, nid.lastIndexOf('/'))
+    const resolvedUrl = new URL(href, `file://${dir}/`).pathname
+    const name = resolvedUrl.slice(resolvedUrl.lastIndexOf('/') + 1)
     if (!isAllowedMarkdownFile(name)) return
 
-    const root = workspacePath.endsWith('/') ? workspacePath : `${workspacePath}/`
-    if (!resolved.startsWith(root)) {
-      pane.tabManager.openTab(resolved, { status: 'blocked' })
+    const nws = normalizeSlashes(workspacePath)
+    const root = new URL(`file://${nws}${nws.endsWith('/') ? '' : '/'}`).pathname
+    if (!resolvedUrl.startsWith(root)) {
+      pane.tabManager.openTab(resolvedUrl, { status: 'blocked' })
       rerender()
       return
     }
 
+    const resolved = resolvedUrl.replace(/^\/([A-Za-z]:\/)/, '$1')
     await paneManager.openFile(pane.id, resolved)
     rerender()
   }
@@ -386,7 +393,7 @@ function App() {
       <div className="app-main">
         <aside className="app-sidebar">
           <SidebarTree tree={tree} status={treeStatus} expandedPaths={expandedPaths} onSelectFile={(path) => {
-            paneManager.openFile(activePaneId, path).then(rerender)
+            paneManager.openFile(activePaneId, normalizeSlashes(path)).then(rerender)
           }} onExpandDir={handleExpandDir} onCollapseDir={handleCollapseDir} />
         </aside>
         <div className="app-content">

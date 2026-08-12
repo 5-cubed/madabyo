@@ -371,4 +371,144 @@ describe('Follow markdown links', () => {
     expect(tabs).toHaveLength(1)
     expect(tabs[0]).toHaveTextContent('main.md')
   })
+
+  it('opens a Windows-style link inside the workspace', async () => {
+    MarkdownRenderer.renderFile.mockImplementation(async (path) => {
+      if (path === 'C:/ws/main.md') {
+        return { status: 'ok', html: '<p><a href="other.md">click me</a></p>' }
+      }
+      if (path === 'C:/ws/other.md') {
+        return { status: 'ok', html: '<h1>Other</h1>' }
+      }
+      return { status: 'not-found' }
+    })
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: 'C:\\ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({
+            entries: [{ name: 'main.md', isDir: false }]
+          })
+        })
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText('main.md')).toBeInTheDocument()
+    }, { timeout: 2000 })
+    await userEvent.click(screen.getByText('main.md'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'click me' })).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    fireEvent.click(screen.getByRole('link', { name: 'click me' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'other.md' })).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    expect(screen.getByRole('tab', { name: 'other.md' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('opens a Windows-style link with native path (no leading slash before drive)', async () => {
+    const openedPaths = []
+    MarkdownRenderer.renderFile.mockImplementation(async (path) => {
+      openedPaths.push(path)
+      if (path === 'C:/ws/main.md') {
+        return { status: 'ok', html: '<p><a href="other.md">click me</a></p>' }
+      }
+      if (path === 'C:/ws/other.md') {
+        return { status: 'ok', html: '<h1>Other</h1>' }
+      }
+      return { status: 'not-found' }
+    })
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: 'C:\\ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({
+            entries: [{ name: 'main.md', isDir: false }]
+          })
+        })
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText('main.md')).toBeInTheDocument()
+    }, { timeout: 2000 })
+    await userEvent.click(screen.getByText('main.md'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'click me' })).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    fireEvent.click(screen.getByRole('link', { name: 'click me' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'other.md' })).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    // Verify the path passed to renderFile does not have a leading / before drive letter
+    expect(openedPaths).toContain('C:/ws/other.md')
+    expect(openedPaths).not.toContain('/C:/ws/other.md')
+  })
+
+  it('still blocks Windows-style links that resolve outside the workspace', async () => {
+    MarkdownRenderer.renderFile.mockImplementation(async (path) => {
+      if (path === 'C:/ws/main.md') {
+        return { status: 'ok', html: '<p><a href="../../outside.md">outside</a></p>' }
+      }
+      return { status: 'not-found' }
+    })
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ workspacePath: 'C:\\ws' })
+        })
+      }
+      if (url.includes('/api/list')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({
+            entries: [{ name: 'main.md', isDir: false }]
+          })
+        })
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText('main.md')).toBeInTheDocument()
+    }, { timeout: 2000 })
+    await userEvent.click(screen.getByText('main.md'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'outside' })).toBeInTheDocument()
+    }, { timeout: 2000 })
+
+    fireEvent.click(screen.getByRole('link', { name: 'outside' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('This link points outside your workspace.')).toBeInTheDocument()
+    }, { timeout: 2000 })
+  })
 })
