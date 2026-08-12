@@ -5,6 +5,17 @@ All notable changes to madabyo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-08-12
+
+### Fixed
+- Windows markdown links now resolve correctly — normalize backslashes to forward slashes and strip leading slash before drive letters — #15
+
+### Documentation
+- spec: Windows-style path acceptance criteria for link following
+
+### Other
+- RED/GREEN: Windows path normalization in markdown link handling
+
 ## [0.8.1] - 2026-08-12
 
 ### Fixed
