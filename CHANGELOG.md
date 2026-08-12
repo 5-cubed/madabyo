@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Markdown pane no longer re-renders and loses fold state when file hasn't changed — #16, #17
 
+### Documentation
+- spec for markdown-refresh, CHANGELOG for 0.8.1
+
+### Other
+- RED/GREEN: refreshTab skips re-render on unchanged mtime
+- RED/GREEN: /api/file/meta endpoint
+- RED/GREEN: FileUsecase.Meta and Stat on FileReader
+
 ## [0.8.0] - 2026-08-11
 
 ### Documentation
