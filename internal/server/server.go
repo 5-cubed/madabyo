@@ -35,6 +35,7 @@ func New(configPath string, cwd string) (http.Handler, error) {
 	})
 	mux.HandleFunc("/api/list", handleList(lister))
 	mux.HandleFunc("/api/file", handleFile(fileReader))
+	mux.HandleFunc("/api/file/meta", handleMeta(fileReader))
 	mux.HandleFunc("/api/settings", handleSettings(store, lister))
 	mux.HandleFunc("/api/log", handleLog(logger))
 	mux.Handle("/", http.FileServer(http.FS(dist)))
