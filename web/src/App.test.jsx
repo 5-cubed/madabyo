@@ -169,6 +169,49 @@ describe('App', () => {
     await waitFor(() => expect(fileCalls).toBe(2))
   })
 
+  it('preserves open details DOM across an unchanged-mtime poll tick', async () => {
+    let fileCalls = 0
+    let metaCalls = 0
+    const fetchMock = vi.fn((url) => {
+      if (url === '/api/settings') return Promise.resolve({ json: async () => ({ workspacePath: '/repo' }) })
+      if (url.startsWith('/api/list')) {
+        return Promise.resolve({ json: async () => ({ entries: [{ name: 'notes.md', isDir: false }] }) })
+      }
+      if (url.startsWith('/api/file/meta')) {
+        metaCalls += 1
+        return Promise.resolve({ json: async () => ({ mtime: 1700000000000 }) })
+      }
+      if (url.startsWith('/api/file')) {
+        fileCalls += 1
+        return Promise.resolve({ json: async () => ({ content: '<details><summary>s</summary>body</details>' }) })
+      }
+      throw new Error(`Unmocked fetch: ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    const { container } = render(<App />)
+
+    const chevron = await waitForChevron(container)
+    fireEvent.click(chevron)
+    fireEvent.click(await screen.findByText('notes.md'))
+    await waitFor(() => expect(fileCalls).toBe(1))
+    await waitFor(() => expect(metaCalls).toBe(1))
+
+    const detailsEl = container.querySelector('details')
+    expect(detailsEl).toBeTruthy()
+    detailsEl.open = true
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000)
+    })
+
+    await waitFor(() => expect(metaCalls).toBeGreaterThan(1))
+    expect(fileCalls).toBe(1)
+    expect(container.querySelector('details')).toBe(detailsEl)
+    expect(detailsEl.open).toBe(true)
+  })
+
   it('switching tabs triggers exactly one refresh of the newly-focused tab', async () => {
     let fileCalls = 0
     let metaCalls = 0

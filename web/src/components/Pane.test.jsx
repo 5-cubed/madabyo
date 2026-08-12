@@ -25,6 +25,38 @@ describe('Pane', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Hi' })).toBeInTheDocument();
   });
 
+  it('keeps rendered details DOM intact when rerendered with the same render result', () => {
+    const tabs = [
+      {
+        fileId: 'notes.md',
+        renderResult: { status: 'ok', html: '<details><summary>s</summary>body</details>' },
+      },
+    ];
+    const { container, rerender } = render(
+      <Pane
+        tabs={tabs}
+        activeTabId="notes.md"
+        onSelectTab={() => {}}
+        onCloseTab={() => {}}
+      />
+    );
+
+    const detailsEl = container.querySelector('details');
+    detailsEl.open = true;
+
+    rerender(
+      <Pane
+        tabs={tabs}
+        activeTabId="notes.md"
+        onSelectTab={() => {}}
+        onCloseTab={() => {}}
+      />
+    );
+
+    expect(container.querySelector('details')).toBe(detailsEl);
+    expect(detailsEl.open).toBe(true);
+  });
+
   // Step 20 test: render-error state
   it('shows error message when render fails (Step 20)', () => {
     render(

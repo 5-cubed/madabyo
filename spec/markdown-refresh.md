@@ -8,6 +8,10 @@ The markdown pane no longer re-renders and loses fold state when the file hasn't
 
 Timer (5s) or tab-switch triggers `PaneManager.refreshTab`. The method first fetches the file's current mtime via `/api/file/meta`. If the mtime matches the cached value from the last render, rendering is skipped. If mtime is new or the file was never rendered, `renderFile` is called and the mtime is cached.
 
+## DOM Stability on Unchanged Refresh
+
+A skipped refresh with unchanged mtime must not replace or touch the pane's rendered DOM subtree. Native browser state set by the user inside rendered content, such as an open `<details>` element, must survive a skipped refresh unchanged.
+
 ## Acceptance Criteria
 
 | AC | Category | Verification Method |
@@ -18,3 +22,5 @@ Timer (5s) or tab-switch triggers `PaneManager.refreshTab`. The method first fet
 | Given a tab whose cached mtime equals the file's current mtime - When `refreshTab` runs (poll or tab-switch) - Then `MarkdownRenderer.renderFile` is NOT called and `renderResult` is unchanged | Normal | `web/src/panes/PaneManager.test.js` |
 | Given a tab whose cached mtime differs from the file's current mtime - When `refreshTab` runs - Then `renderFile` IS called and the tab's `mtime` is updated | Normal | `web/src/panes/PaneManager.test.js` |
 | Given a tab with no cached mtime yet (first refresh after open) - When `refreshTab` runs - Then it always re-renders and caches the returned mtime | Boundary | `web/src/panes/PaneManager.test.js` |
+| Given a `<details>` in the rendered pane was toggled open by the user - When `Pane` re-renders with the same `renderResult` object because mtime is unchanged - Then the `<details>` DOM node is the same instance and `.open` is still `true` | Normal | `web/src/components/Pane.test.jsx` |
+| Given a `<details>` in the rendered pane was toggled open by the user - When the app's 5s poll fires and `/api/file/meta` returns unchanged mtime - Then the `<details>` DOM node is the same instance and `.open` is still `true` | Normal | `web/src/App.test.jsx` |

@@ -24,13 +24,15 @@ function handlePaneClick(event, onFollowLink) {
 
 export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab, onFollowLink }) {
   const activeTab = tabs.find((t) => t.fileId === activeTabId);
+  const html = activeTab?.renderResult?.html ?? '';
+  const dangerousHtml = React.useMemo(() => ({ __html: html }), [html]);
 
   // Empty state
   if (!activeTab) {
     return <div className="pane-empty">No file open</div>;
   }
 
-  const { status, html } = activeTab.renderResult;
+  const { status } = activeTab.renderResult;
 
   // Step 19: ok branch (working code)
   if (status === 'ok') {
@@ -55,7 +57,7 @@ export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab, onFol
             </span>
           ))}
         </div>
-        <div className="pane-content" onClick={(e) => handlePaneClick(e, onFollowLink)} dangerouslySetInnerHTML={{ __html: html }} />
+        <div className="pane-content" onClick={(e) => handlePaneClick(e, onFollowLink)} dangerouslySetInnerHTML={dangerousHtml} />
       </div>
     );
   }
