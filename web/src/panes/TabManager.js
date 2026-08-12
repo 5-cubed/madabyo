@@ -12,14 +12,14 @@ export class TabManager {
     return this._activeTabId;
   }
 
-  openTab(fileId, renderResult) {
+  openTab(fileId, renderResult, mtime) {
     const existing = this._tabs.find((t) => t.fileId === fileId);
     if (existing) {
       this.focusTab(fileId);
       return;
     }
 
-    this._tabs.push({ fileId, renderResult });
+    this._tabs.push({ fileId, renderResult, mtime });
     this._activeTabId = fileId;
   }
 
@@ -27,9 +27,12 @@ export class TabManager {
     this._activeTabId = fileId;
   }
 
-  updateTabResult(fileId, renderResult) {
+  updateTabResult(fileId, renderResult, mtime) {
     const tab = this._tabs.find((t) => t.fileId === fileId);
-    if (tab) tab.renderResult = renderResult;
+    if (tab) {
+      tab.renderResult = renderResult;
+      tab.mtime = mtime;
+    }
   }
 
   closeTab(fileId) {

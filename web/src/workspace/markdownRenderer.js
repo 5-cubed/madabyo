@@ -108,3 +108,14 @@ export async function renderFile(path) {
     return { status: 'render-error' };
   }
 }
+
+export async function fetchMeta(path) {
+  try {
+    const res = await fetch(`/api/file/meta?path=${encodeURIComponent(path)}`);
+    const result = await res.json();
+    if (result.error) return { status: 'not-found' };
+    return { status: 'ok', mtime: result.mtime };
+  } catch {
+    return { status: 'not-found' };
+  }
+}

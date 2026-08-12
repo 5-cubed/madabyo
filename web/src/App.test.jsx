@@ -131,11 +131,16 @@ describe('App', () => {
   it('polls every 5s: re-lists expanded dirs and refreshes only the active pane\'s active tab', async () => {
     let listCalls = 0
     let fileCalls = 0
+    let metaCalls = 0
     const fetchMock = vi.fn((url) => {
       if (url === '/api/settings') return Promise.resolve({ json: async () => ({ workspacePath: '/repo' }) })
       if (url.startsWith('/api/list')) {
         listCalls += 1
         return Promise.resolve({ json: async () => ({ entries: [{ name: 'notes.md', isDir: false }] }) })
+      }
+      if (url.startsWith('/api/file/meta')) {
+        metaCalls += 1
+        return Promise.resolve({ json: async () => ({ mtime: 1700000000000 + metaCalls }) })
       }
       if (url.startsWith('/api/file')) {
         fileCalls += 1
@@ -166,6 +171,7 @@ describe('App', () => {
 
   it('switching tabs triggers exactly one refresh of the newly-focused tab', async () => {
     let fileCalls = 0
+    let metaCalls = 0
     const fetchMock = vi.fn((url) => {
       if (url === '/api/settings') return Promise.resolve({ json: async () => ({ workspacePath: '/repo' }) })
       if (url.startsWith('/api/list')) {
@@ -173,6 +179,10 @@ describe('App', () => {
           { name: 'a.md', isDir: false },
           { name: 'b.md', isDir: false }
         ] }) })
+      }
+      if (url.startsWith('/api/file/meta')) {
+        metaCalls += 1
+        return Promise.resolve({ json: async () => ({ mtime: 1700000000000 + metaCalls }) })
       }
       if (url.startsWith('/api/file')) {
         fileCalls += 1

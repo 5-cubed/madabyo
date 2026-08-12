@@ -24,14 +24,25 @@ export class PaneManager {
       return;
     }
     const result = await MarkdownRenderer.renderFile(path);
-    pane.tabManager.openTab(fileId, result);
+    const meta = await MarkdownRenderer.fetchMeta(path);
+    const mtime = meta.status === 'ok' ? meta.mtime : null;
+    pane.tabManager.openTab(fileId, result, mtime);
   }
 
   async refreshTab(paneId, fileId) {
     const pane = this._panes.find((p) => p.id === paneId);
     if (!pane) return;
+    const tab = pane.tabManager.tabs.find((t) => t.fileId === fileId);
+    if (!tab) return;
+
+    const meta = await MarkdownRenderer.fetchMeta(fileId);
+    if (meta.status === 'ok' && tab.mtime === meta.mtime) {
+      return;
+    }
+
     const result = await MarkdownRenderer.renderFile(fileId);
-    pane.tabManager.updateTabResult(fileId, result);
+    const mtime = meta.status === 'ok' ? meta.mtime : null;
+    pane.tabManager.updateTabResult(fileId, result, mtime);
   }
 
   async splitRight(sourcePaneId) {
