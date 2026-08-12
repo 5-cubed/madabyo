@@ -10,6 +10,8 @@ type fakeFileReader struct {
 	content       string
 	resolveErr    error
 	readErr       error
+	mtime         int64
+	statErr       error
 }
 
 func (f fakeFileReader) Resolve(abs string) (string, error) {
@@ -21,6 +23,13 @@ func (f fakeFileReader) ReadFile(resolved string) (string, error) {
 		return "", f.readErr
 	}
 	return f.content, nil
+}
+
+func (f fakeFileReader) Stat(resolved string) (int64, error) {
+	if f.statErr != nil {
+		return 0, f.statErr
+	}
+	return f.mtime, nil
 }
 
 func TestFileUsecase_Get(t *testing.T) {
@@ -81,6 +90,53 @@ func TestFileUsecase_Get(t *testing.T) {
 		}
 		if result.Content != "" {
 			t.Fatalf("Content should be empty on error")
+		}
+	})
+}
+
+func TestFileUsecase_Meta(t *testing.T) {
+	t.Run("success returns mtime", func(t *testing.T) {
+		reader := fakeFileReader{resolved: "/tmp/notes.md", mtime: 1700000000000}
+		result := FileUsecase{}.Meta("/tmp/notes.md", reader)
+
+		if result.Error != "" {
+			t.Fatalf("unexpected error: %q", result.Error)
+		}
+		if result.Resolved != "/tmp/notes.md" {
+			t.Fatalf("Resolved = %q, want /tmp/notes.md", result.Resolved)
+		}
+		if result.Mtime != 1700000000000 {
+			t.Fatalf("Mtime = %d, want 1700000000000", result.Mtime)
+		}
+	})
+
+	t.Run("disallowed extension returns error", func(t *testing.T) {
+		reader := fakeFileReader{resolved: "/tmp/notes.txt", mtime: 1700000000000}
+		result := FileUsecase{}.Meta("/tmp/notes.txt", reader)
+
+		if result.Error == "" {
+			t.Fatal("expected error for disallowed extension, got none")
+		}
+		if result.Error != "extension not allowed" {
+			t.Fatalf("error = %q, want 'extension not allowed'", result.Error)
+		}
+		if result.Resolved != "/tmp/notes.txt" {
+			t.Fatalf("Resolved should be set even on error")
+		}
+	})
+
+	t.Run("nonexistent file returns error", func(t *testing.T) {
+		reader := fakeFileReader{resolved: "/tmp/notes.md", statErr: errors.New("file not found")}
+		result := FileUsecase{}.Meta("/tmp/notes.md", reader)
+
+		if result.Error == "" {
+			t.Fatal("expected error, got none")
+		}
+		if result.Resolved != "/tmp/notes.md" {
+			t.Fatalf("Resolved should be set even on error")
+		}
+		if result.Mtime != 0 {
+			t.Fatalf("Mtime should be 0 on error")
 		}
 	})
 }

@@ -22,3 +22,10 @@ type FileResult struct {
 	Content   string `json:"content,omitempty"`
 	Error     string `json:"error,omitempty"`
 }
+
+type MetaResult struct {
+	Requested string `json:"requested"`
+	Resolved  string `json:"resolved,omitempty"`
+	Mtime     int64  `json:"mtime,omitempty"`
+	Error     string `json:"error,omitempty"`
+}

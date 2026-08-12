@@ -8,6 +8,7 @@ import (
 type FileReader interface {
 	Resolve(abs string) (resolved string, err error)
 	ReadFile(resolved string) (content string, err error)
+	Stat(resolved string) (mtime int64, err error)
 }
 
 type OSFileReader struct{}
@@ -22,4 +23,12 @@ func (OSFileReader) ReadFile(resolved string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func (OSFileReader) Stat(resolved string) (int64, error) {
+	info, err := os.Stat(resolved)
+	if err != nil {
+		return 0, err
+	}
+	return info.ModTime().UnixMilli(), nil
 }
