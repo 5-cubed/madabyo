@@ -5,6 +5,14 @@ All notable changes to madabyo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4] - 2026-08-13
+
+### Fixed
+- self-host sidebar tree icons in bundled assets instead of loading from CDN, enabling use in locked-down networks — #19
+
+### Documentation
+- spec: icon hosting section under Sidebar Tree
+
 ## [0.8.3] - 2026-08-12
 
 ### Fixes

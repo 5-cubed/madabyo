@@ -1,9 +1,15 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import SidebarTree from './SidebarTree'
+import SidebarTree, { ICONS } from './SidebarTree'
 
 describe('SidebarTree', () => {
+  it('should not use http URLs for icons', () => {
+    expect(ICONS.folderOpen).not.toMatch(/^http/)
+    expect(ICONS.folderClosed).not.toMatch(/^http/)
+    expect(ICONS.markdown).not.toMatch(/^http/)
+  })
+
   it('should render a folder icon for a directory node', () => {
     render(
       <SidebarTree

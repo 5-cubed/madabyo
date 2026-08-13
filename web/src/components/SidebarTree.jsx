@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import './SidebarTree.css'
+import folderOpenIcon from '../assets/icons/default_folder_opened.svg'
+import folderClosedIcon from '../assets/icons/default_folder.svg'
+import markdownIcon from '../assets/icons/file_type_markdown.svg'
 
-const ICON_BASE = 'https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@master/icons'
-
-const ICONS = {
-  folderOpen: `${ICON_BASE}/default_folder_opened.svg`,
-  folderClosed: `${ICON_BASE}/default_folder.svg`,
-  markdown: `${ICON_BASE}/file_type_markdown.svg`
+export const ICONS = {
+  folderOpen: folderOpenIcon,
+  folderClosed: folderClosedIcon,
+  markdown: markdownIcon
 }
 
 function TreeNode({ node, selectedPath, onSelectFile, onExpandDir, onCollapseDir, expandedPaths = [], isRoot = false }) {
