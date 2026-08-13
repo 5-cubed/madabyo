@@ -8,6 +8,15 @@ The sidebar displays a tree of markdown files in the workspace. Folders are expa
 
 Sidebar folders are saved per workspace and restored on load. The most recently opened folders are retained up to a limit of 100; older entries are dropped first. Folders that can no longer be listed are silently removed. Missing ancestor folders are automatically opened before their nested folders during restore. The previously highlighted file is restored as a visual highlight only, with no tab opened.
 
+## Icon Hosting
+
+Tree icons render from bundled local assets, never from external URLs. Folder and markdown file icons ship inside `web/src/assets/icons/` and are embedded by Vite in every build (dev, prod, offline), with no new npm dependency.
+
+| AC | Behavior | Verification Method |
+|--|--|--|
+| Given the app is built with `npm run build` and network access is blocked - When the sidebar renders a folder or markdown file row - Then the icon `<img>` displays (no broken-image icon) | Icon display offline | `web/src/components/SidebarTree.test.jsx` |
+| Given `SidebarTree.jsx` is loaded - When `ICONS.folderOpen`, `ICONS.folderClosed`, `ICONS.markdown` are read - Then none of their values start with `http` | No CDN URLs | `web/src/components/SidebarTree.test.jsx` |
+
 ## Acceptance Criteria
 
 | AC | Behavior | Verification Method |
