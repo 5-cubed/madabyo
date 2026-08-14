@@ -5,24 +5,37 @@ function basename(path) {
   return idx === -1 ? path : path.slice(idx + 1);
 }
 
-function handlePaneClick(event, onFollowLink) {
+function handlePaneClick(event, onFollowLink, onToggleCheckbox) {
   const anchor = event.target.closest('a')
-  if (!anchor) return
-  const href = anchor.getAttribute('href')
-  if (!href) return
-  if (/^https?:\/\//i.test(href)) {
+  if (anchor) {
+    const href = anchor.getAttribute('href')
+    if (!href) return
+    if (/^https?:\/\//i.test(href)) {
+      event.preventDefault()
+      window.open(href, '_blank', 'noopener,noreferrer')
+      return
+    }
+    if (href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
+      return
+    }
     event.preventDefault()
-    window.open(href, '_blank', 'noopener,noreferrer')
+    onFollowLink(href)
     return
   }
-  if (href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
-    return
+
+  const checkbox = event.target.closest('input[type="checkbox"][data-index]')
+  if (checkbox && onToggleCheckbox) {
+    const index = parseInt(checkbox.getAttribute('data-index'), 10)
+    const checked = checkbox.checked
+    onToggleCheckbox(index, checked).then((success) => {
+      if (!success) {
+        checkbox.checked = !checked
+      }
+    })
   }
-  event.preventDefault()
-  onFollowLink(href)
 }
 
-export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab, onFollowLink }) {
+export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab, onFollowLink, onToggleCheckbox }) {
   const activeTab = tabs.find((t) => t.fileId === activeTabId);
   const html = activeTab?.renderResult?.html ?? '';
   const dangerousHtml = React.useMemo(() => ({ __html: html }), [html]);
@@ -57,7 +70,7 @@ export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab, onFol
             </span>
           ))}
         </div>
-        <div className="pane-content" onClick={(e) => handlePaneClick(e, onFollowLink)} dangerouslySetInnerHTML={dangerousHtml} />
+        <div className="pane-content" onClick={(e) => handlePaneClick(e, onFollowLink, onToggleCheckbox)} dangerouslySetInnerHTML={dangerousHtml} />
       </div>
     );
   }

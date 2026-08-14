@@ -171,7 +171,15 @@ export async function renderFile(path) {
 
   // Parse the markdown to HTML, with render-error handling
   try {
-    const html = await marked.parse(text);
+    let html = await marked.parse(text);
+
+    // Add data-index to checkboxes for interactive toggling
+    let checkboxIndex = 0;
+    html = html.replace(/<input type="checkbox"([^>]*)>/g, () => {
+      const isChecked = arguments[1]?.includes('checked') ? 'checked' : '';
+      return `<input type="checkbox" data-index="${checkboxIndex++}" ${isChecked}>`;
+    });
+
     return { status: 'ok', html, content: text };
   } catch {
     return { status: 'render-error' };
