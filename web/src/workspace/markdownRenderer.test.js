@@ -5,6 +5,51 @@ import { renderDiagram } from './diagramRenderer.js';
 
 vi.mock('./diagramRenderer.js', () => ({ renderDiagram: vi.fn() }));
 
+// Import the toggleCheckboxContent for testing
+import { toggleCheckboxContent } from './markdownRenderer.js';
+
+describe('toggleCheckboxContent', () => {
+  it('toggles checkbox in a flat list from unchecked to checked', () => {
+    const content = '- [ ] task one\n- [ ] task two';
+    const result = toggleCheckboxContent(content, 0, true);
+    expect(result).toBe('- [x] task one\n- [ ] task two');
+  });
+
+  it('toggles checkbox in a flat list from checked to unchecked', () => {
+    const content = '- [x] done task\n- [ ] pending';
+    const result = toggleCheckboxContent(content, 0, false);
+    expect(result).toBe('- [ ] done task\n- [ ] pending');
+  });
+
+  it('toggles the second checkbox in a flat list', () => {
+    const content = '- [ ] task one\n- [ ] task two\n- [ ] task three';
+    const result = toggleCheckboxContent(content, 1, true);
+    expect(result).toBe('- [ ] task one\n- [x] task two\n- [ ] task three');
+  });
+
+  it('toggles checkbox in a nested list', () => {
+    const content = '- [ ] parent\n  - [ ] child one\n  - [ ] child two\n- [ ] sibling';
+    const result = toggleCheckboxContent(content, 1, true);
+    expect(result).toBe('- [ ] parent\n  - [x] child one\n  - [ ] child two\n- [ ] sibling');
+  });
+
+  it('ignores decoy checkbox inside a code fence', () => {
+    const content = '- [ ] real task\n\n```\n- [ ] fake checkbox\n```\n\n- [ ] another real';
+    const result = toggleCheckboxContent(content, 1, true);
+    expect(result).toBe('- [ ] real task\n\n```\n- [ ] fake checkbox\n```\n\n- [x] another real');
+  });
+
+  it('throws error when checkbox index is out of range', () => {
+    const content = '- [ ] only one checkbox';
+    expect(() => toggleCheckboxContent(content, 5, true)).toThrow(/out of range/);
+  });
+
+  it('throws error when checkbox index is negative (invalid)', () => {
+    const content = '- [ ] task';
+    expect(() => toggleCheckboxContent(content, -1, true)).toThrow(/out of range/);
+  });
+});
+
 describe('MarkdownRenderer', () => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -23,6 +68,7 @@ describe('MarkdownRenderer', () => {
     expect(result).toEqual({
       status: 'ok',
       html: expect.stringContaining('<h1>Hello</h1>'),
+      content: '# Hello',
     });
     expect(mockFetch).toHaveBeenCalledWith(
       `/api/file?path=${encodeURIComponent('/path/to/notes.md')}`

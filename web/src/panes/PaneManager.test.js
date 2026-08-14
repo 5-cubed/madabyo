@@ -39,7 +39,7 @@ describe('PaneManager', () => {
     expect(pane.tabManager.tabs).toEqual([
       {
         fileId: '/tmp/notes.md',
-        renderResult: { status: 'ok', html: expect.stringContaining('<h1>Hi</h1>') },
+        renderResult: { status: 'ok', html: expect.stringContaining('<h1>Hi</h1>'), content: '# Hi' },
         mtime: expect.any(Number),
       },
     ]);
