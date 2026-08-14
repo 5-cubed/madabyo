@@ -427,6 +427,11 @@ function App() {
                     rerender()
                   }}
                   onFollowLink={(href) => handleFollowLink(pane, href)}
+                  onToggleCheckbox={(index, checked) => {
+                    const result = paneManager.toggleCheckbox(pane.id, pane.tabManager.activeTabId, index, checked);
+                    rerender();
+                    return result;
+                  }}
                 />
               </div>
             ))}
