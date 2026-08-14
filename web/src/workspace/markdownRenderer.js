@@ -173,10 +173,10 @@ export async function renderFile(path) {
   try {
     let html = await marked.parse(text);
 
-    // Add data-index to checkboxes for interactive toggling
+    // Add data-index to checkboxes for interactive toggling, remove disabled attribute
     let checkboxIndex = 0;
-    html = html.replace(/<input type="checkbox"([^>]*)>/g, () => {
-      const isChecked = arguments[1]?.includes('checked') ? 'checked' : '';
+    html = html.replace(/<input [^>]*type="checkbox"[^>]*>/g, (match) => {
+      const isChecked = match.includes('checked') ? 'checked' : '';
       return `<input type="checkbox" data-index="${checkboxIndex++}" ${isChecked}>`;
     });
 
