@@ -9,6 +9,7 @@ type FileReader interface {
 	Resolve(abs string) (resolved string, err error)
 	ReadFile(resolved string) (content string, err error)
 	Stat(resolved string) (mtime int64, err error)
+	WriteFile(resolved string, content string) error
 }
 
 type OSFileReader struct{}
@@ -31,4 +32,8 @@ func (OSFileReader) Stat(resolved string) (int64, error) {
 		return 0, err
 	}
 	return info.ModTime().UnixMilli(), nil
+}
+
+func (OSFileReader) WriteFile(resolved string, content string) error {
+	return os.WriteFile(resolved, []byte(content), 0644)
 }

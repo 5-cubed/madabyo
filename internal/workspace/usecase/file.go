@@ -45,3 +45,33 @@ func (FileUsecase) Meta(raw string, reader external.FileReader) objects.MetaResu
 	}
 	return objects.MetaResult{Requested: raw, Resolved: resolved, Mtime: mtime}
 }
+
+func (FileUsecase) Save(raw string, content string, expectedMtime int64, reader external.FileReader) objects.SaveResult {
+	abs, err := logics.CleanAbs(raw)
+	if err != nil {
+		return objects.SaveResult{Requested: raw, Error: "abs: " + err.Error()}
+	}
+	resolved, err := reader.Resolve(abs)
+	if err != nil {
+		return objects.SaveResult{Requested: raw, Error: "evalsymlinks: " + err.Error()}
+	}
+	if !logics.IsAllowedFile(resolved) {
+		return objects.SaveResult{Requested: raw, Resolved: resolved, Error: "extension not allowed"}
+	}
+	currentMtime, err := reader.Stat(resolved)
+	if err != nil {
+		return objects.SaveResult{Requested: raw, Resolved: resolved, Error: "stat: " + err.Error()}
+	}
+	if currentMtime != expectedMtime {
+		return objects.SaveResult{Requested: raw, Resolved: resolved, Mtime: currentMtime, Error: "stale"}
+	}
+	err = reader.WriteFile(resolved, content)
+	if err != nil {
+		return objects.SaveResult{Requested: raw, Resolved: resolved, Mtime: currentMtime, Error: "write: " + err.Error()}
+	}
+	newMtime, err := reader.Stat(resolved)
+	if err != nil {
+		return objects.SaveResult{Requested: raw, Resolved: resolved, Mtime: currentMtime, Error: ""}
+	}
+	return objects.SaveResult{Requested: raw, Resolved: resolved, Mtime: newMtime}
+}
