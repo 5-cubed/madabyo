@@ -5,6 +5,20 @@ All notable changes to madabyo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-08-14
+
+### Fixes
+- remove disabled attribute and fix checkbox regex to enable clicking
+
+### Other
+- RED/GREEN: Wire onToggleCheckbox through App component
+- RED/GREEN: Checkbox click handler and data-index rendering
+- RED/GREEN: PaneManager.toggleCheckbox method
+- spec: checkbox-edit feature specification
+- RED/GREEN: toggleCheckboxContent and renderFile content field
+- RED/GREEN: PUT /api/file handler for checkbox save
+- RED/GREEN: FileUsecase.Save with stale-mtime guard and write infrastructure
+
 ## [0.8.4] - 2026-08-13
 
 ### Fixed
