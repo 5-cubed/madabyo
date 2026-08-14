@@ -101,6 +101,74 @@ describe('PaneManager', () => {
     expect(pane.tabManager.tabs.map((t) => t.fileId)).toEqual(['/tmp/a.md', '/tmp/b.md']);
   });
 
+  // Test: toggleCheckbox success path
+  it('toggleCheckbox updates tab content and mtime on success', async () => {
+    const mockFetch = vi.fn();
+    // Mock /api/file for openFile
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({
+        content: '- [ ] task one\n- [ ] task two',
+        requested: '/tmp/tasks.md',
+        resolved: '/tmp/tasks.md',
+      }),
+    });
+    // Mock /api/file/meta for openFile
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({ mtime: 1000, requested: '/tmp/tasks.md', resolved: '/tmp/tasks.md' }),
+    });
+    // Mock PUT /api/file for toggleCheckbox
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({ mtime: 1001 }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const pm = new PaneManager(['pane-1']);
+    await pm.openFile('pane-1', '/tmp/tasks.md');
+    const pane = pm.panes.find((p) => p.id === 'pane-1');
+    const tab = pane.tabManager.tabs[0];
+
+    const result = await pm.toggleCheckbox('pane-1', '/tmp/tasks.md', 0, true);
+
+    expect(result).toBe(true);
+    expect(tab.renderResult.content).toBe('- [x] task one\n- [ ] task two');
+    expect(tab.mtime).toBe(1001);
+  });
+
+  // Test: toggleCheckbox failure path
+  it('toggleCheckbox returns false on save failure', async () => {
+    const mockFetch = vi.fn();
+    // Mock /api/file for openFile
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({
+        content: '- [ ] task one',
+        requested: '/tmp/tasks.md',
+        resolved: '/tmp/tasks.md',
+      }),
+    });
+    // Mock /api/file/meta for openFile
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({ mtime: 1000, requested: '/tmp/tasks.md', resolved: '/tmp/tasks.md' }),
+    });
+    // Mock PUT /api/file for toggleCheckbox (returns error)
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({ error: 'stale', mtime: 2000 }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const pm = new PaneManager(['pane-1']);
+    await pm.openFile('pane-1', '/tmp/tasks.md');
+    const pane = pm.panes.find((p) => p.id === 'pane-1');
+    const tab = pane.tabManager.tabs[0];
+    const originalContent = tab.renderResult.content;
+    const originalMtime = tab.mtime;
+
+    const result = await pm.toggleCheckbox('pane-1', '/tmp/tasks.md', 0, true);
+
+    expect(result).toBe(false);
+    expect(tab.renderResult.content).toBe(originalContent);
+    expect(tab.mtime).toBe(originalMtime);
+  });
+
   // Test: resizeDivider with 4 scenarios
   it('resizes panes, with default width and min-width clamp - scenario 1', async () => {
     mockFetchFile('/tmp/notes.md', '# Hi', '/tmp/notes.md', '# Hi');

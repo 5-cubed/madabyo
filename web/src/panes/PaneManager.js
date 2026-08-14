@@ -45,6 +45,29 @@ export class PaneManager {
     pane.tabManager.updateTabResult(fileId, result, mtime);
   }
 
+  async toggleCheckbox(paneId, fileId, index, checked) {
+    const pane = this._panes.find((p) => p.id === paneId);
+    if (!pane) return false;
+    const tab = pane.tabManager.tabs.find((t) => t.fileId === fileId);
+    if (!tab || !tab.renderResult || tab.renderResult.status !== 'ok') return false;
+
+    try {
+      const newContent = MarkdownRenderer.toggleCheckboxContent(tab.renderResult.content, index, checked);
+      const result = await MarkdownRenderer.saveFile(fileId, newContent, tab.mtime);
+
+      if (result.status === 'ok') {
+        // Update the tab's cached content and mtime in place
+        tab.renderResult.content = newContent;
+        tab.mtime = result.mtime;
+        return true;
+      } else {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+
   async splitRight(sourcePaneId) {
     const sourceIndex = this._panes.findIndex((p) => p.id === sourcePaneId);
     const newPane = { id: `pane-${this._panes.length + 1}`, tabManager: new TabManager() };
