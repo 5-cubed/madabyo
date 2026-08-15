@@ -39,6 +39,7 @@ function findCheckboxSpans(content) {
   const spans = [];
 
   function findNestedListStart(item) {
+    // Anchor on parent's text token, not child's text: avoids false matches on duplicate text.
     const textTok = item.tokens.find((t) => t.type === 'text' || t.type === 'paragraph');
     if (!textTok) return -1;
     const idx = item.raw.indexOf(textTok.raw);
@@ -54,6 +55,8 @@ function findCheckboxSpans(content) {
   }
 
   function walkList(listTok, regionStart, indentWidth = 0) {
+    // indentWidth: account for indentation that marked's lexer strips from nested-list items.
+    // Each source line contributes additional indentWidth bytes to cursor advancement.
     let cursor = regionStart;
     for (const item of listTok.items) {
       const checkboxTok = item.tokens.find((t) => t.type === 'checkbox');
