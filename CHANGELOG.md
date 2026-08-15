@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1] - 2026-08-15
 
+### Documentation
+- spec note for nested-checkbox fix and known limitation
+
+### Chores
+- add changelog entry for v0.9.1 nested checkbox fix
+
+### Other
+- refactor: trim narrative comments in checkbox span finder
+- RED/GREEN: verify fix covers independent nested lists
+- RED/GREEN: verify fix covers sibling-after-nested-list
+- RED/GREEN: verify fix covers 3-child nested list
+- GREEN: fix nested-list cursor drift causing checkbox corruption
+- RED: reproduce nested-checkbox-toggle corruption
+
+## [0.9.1] - 2026-08-15
+
 ### Fixed
 - nested checkbox toggle no longer corrupts the file when toggling the 2nd+ item in a nested list
 
