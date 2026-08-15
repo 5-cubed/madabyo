@@ -33,6 +33,12 @@ describe('toggleCheckboxContent', () => {
     expect(result).toBe('- [ ] parent\n  - [x] child one\n  - [ ] child two\n- [ ] sibling');
   });
 
+  it('toggles the last checkbox in a two-child nested list', () => {
+    const content = '- [ ] parent\n  - [ ] child one\n  - [ ] child two\n- [ ] sibling';
+    const result = toggleCheckboxContent(content, 2, true);
+    expect(result).toBe('- [ ] parent\n  - [ ] child one\n  - [x] child two\n- [ ] sibling');
+  });
+
   it('ignores decoy checkbox inside a code fence', () => {
     const content = '- [ ] real task\n\n```\n- [ ] fake checkbox\n```\n\n- [ ] another real';
     const result = toggleCheckboxContent(content, 1, true);
