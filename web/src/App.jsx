@@ -115,6 +115,7 @@ function App() {
   const [treeStatus, setTreeStatus] = useState('loading')
   const [expandedPaths, setExpandedPaths] = useState([])
   const [workspacePath, setWorkspacePath] = useState(null)
+  const [folded, setFolded] = useState(false)
 
   // Load workspace settings and initialize tree
   async function loadTree() {
@@ -287,6 +288,32 @@ function App() {
     }
   }, [treeStatus, workspacePath])
 
+  // Load folded state from localStorage when workspace changes
+  useEffect(() => {
+    if (workspacePath) {
+      const saved = localStorage.getItem(`madabyo:sidebar:layout:${workspacePath}`)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          // Assert: coerce folded to boolean, treating non-boolean as false
+          const isFolded = typeof parsed.folded === 'boolean' ? parsed.folded : false
+          setFolded(isFolded)
+        } catch (err) {
+          console.error('Failed to parse sidebar layout:', err)
+          setFolded(false)
+        }
+      }
+    }
+  }, [workspacePath])
+
+  // Save folded state to localStorage when it changes
+  useEffect(() => {
+    if (workspacePath) {
+      const layout = { folded }
+      localStorage.setItem(`madabyo:sidebar:layout:${workspacePath}`, JSON.stringify(layout))
+    }
+  }, [folded, workspacePath])
+
   // Polling: every 5 seconds
   useEffect(() => {
     if (treeStatus !== 'ready' || !tree) {
@@ -379,6 +406,21 @@ function App() {
         <span className="app-title">Markdown Viewer</span>
         <button
           type="button"
+          className="btn-fold"
+          aria-label={folded ? "Unfold sidebar" : "Fold sidebar"}
+          data-testid="fold-button"
+          onClick={() => setFolded(!folded)}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            {folded ? (
+              <path d="M13 17h8M13 13h8M13 9h8M5 4v16M2 7l3-3 3 3" />
+            ) : (
+              <path d="M6 17H2M6 13H2M6 9H2M19 4V20M22 7l-3-3-3 3" />
+            )}
+          </svg>
+        </button>
+        <button
+          type="button"
           className="btn-settings"
           aria-label="Settings"
           onClick={() => setSettingsOpen(true)}
@@ -391,11 +433,13 @@ function App() {
       </header>
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} onSaved={handleSettingsSaved} />}
       <div className="app-main">
-        <aside className="app-sidebar">
-          <SidebarTree tree={tree} status={treeStatus} expandedPaths={expandedPaths} onSelectFile={(path) => {
-            paneManager.openFile(activePaneId, normalizeSlashes(path)).then(rerender)
-          }} onExpandDir={handleExpandDir} onCollapseDir={handleCollapseDir} />
-        </aside>
+        {!folded && (
+          <aside className="app-sidebar">
+            <SidebarTree tree={tree} status={treeStatus} expandedPaths={expandedPaths} onSelectFile={(path) => {
+              paneManager.openFile(activePaneId, normalizeSlashes(path)).then(rerender)
+            }} onExpandDir={handleExpandDir} onCollapseDir={handleCollapseDir} />
+          </aside>
+        )}
         <div className="app-content">
           <SplitContainer
             panes={paneManager.panes}
