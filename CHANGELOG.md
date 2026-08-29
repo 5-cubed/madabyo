@@ -5,6 +5,13 @@ All notable changes to madabyo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-08-29
+
+### Other
+- Fix split-pane divider: rendering, placement, and sensitivity
+- Add a drag handle to resize the sidebar so users can widen it for long filenames or narrow it for more reading room, remembering the width per workspace.
+- Add sidebar fold/unfold toggle so users can hide the file tree for more reading width, remembering the choice per workspace like the folder-expand state already does.
+
 ## [0.9.1] - 2026-08-15
 
 ### Documentation
