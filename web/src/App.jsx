@@ -7,6 +7,11 @@ import { PaneManager } from './panes/PaneManager'
 import './theme/tokens.css'
 import './App.css'
 
+// Constants for sidebar width constraints
+const MIN_SIDEBAR_WIDTH = 160
+const MAX_SIDEBAR_WIDTH = 600
+const DEFAULT_SIDEBAR_WIDTH = 260
+
 // Helper: check if a file is allowed (matches allowlist)
 function isAllowedMarkdownFile(name) {
   const dotIndex = name.lastIndexOf('.')
@@ -116,6 +121,7 @@ function App() {
   const [expandedPaths, setExpandedPaths] = useState([])
   const [workspacePath, setWorkspacePath] = useState(null)
   const [folded, setFolded] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH)
 
   // Load workspace settings and initialize tree
   async function loadTree() {
@@ -288,7 +294,7 @@ function App() {
     }
   }, [treeStatus, workspacePath])
 
-  // Load folded state from localStorage when workspace changes
+  // Load folded state and sidebar width from localStorage when workspace changes
   useEffect(() => {
     if (workspacePath) {
       const saved = localStorage.getItem(`madabyo:sidebar:layout:${workspacePath}`)
@@ -298,21 +304,25 @@ function App() {
           // Assert: coerce folded to boolean, treating non-boolean as false
           const isFolded = typeof parsed.folded === 'boolean' ? parsed.folded : false
           setFolded(isFolded)
+          // Assert: width must be finite and clamped to [MIN, MAX], else default to 260
+          const width = Number.isFinite(parsed.width) ? Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, parsed.width)) : DEFAULT_SIDEBAR_WIDTH
+          setSidebarWidth(width)
         } catch (err) {
           console.error('Failed to parse sidebar layout:', err)
           setFolded(false)
+          setSidebarWidth(DEFAULT_SIDEBAR_WIDTH)
         }
       }
     }
   }, [workspacePath])
 
-  // Save folded state to localStorage when it changes
+  // Save folded state and sidebar width to localStorage when they change
   useEffect(() => {
     if (workspacePath) {
-      const layout = { folded }
+      const layout = { folded, width: sidebarWidth }
       localStorage.setItem(`madabyo:sidebar:layout:${workspacePath}`, JSON.stringify(layout))
     }
-  }, [folded, workspacePath])
+  }, [folded, sidebarWidth, workspacePath])
 
   // Polling: every 5 seconds
   useEffect(() => {
@@ -400,6 +410,22 @@ function App() {
     loadTree()
   }
 
+  function handleSidebarDividerMouseDown() {
+    const handleMouseMove = (e) => {
+      setSidebarWidth((prevWidth) => {
+        const newWidth = prevWidth + e.movementX
+        // Clamp at every mousemove tick to ensure invariant holds
+        return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, newWidth))
+      })
+    }
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+  }
+
   return (
     <div className="app-shell">
       <header className="app-toolbar">
@@ -434,10 +460,16 @@ function App() {
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} onSaved={handleSettingsSaved} />}
       <div className="app-main">
         {!folded && (
-          <aside className="app-sidebar">
+          <aside className="app-sidebar" style={{ width: `${sidebarWidth}px` }}>
             <SidebarTree tree={tree} status={treeStatus} expandedPaths={expandedPaths} onSelectFile={(path) => {
               paneManager.openFile(activePaneId, normalizeSlashes(path)).then(rerender)
             }} onExpandDir={handleExpandDir} onCollapseDir={handleCollapseDir} />
+            <div
+              role="separator"
+              aria-label="Resize sidebar"
+              className="divider"
+              onMouseDown={handleSidebarDividerMouseDown}
+            />
           </aside>
         )}
         <div className="app-content">

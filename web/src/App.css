@@ -51,8 +51,8 @@
 .app-sidebar {
   width: 260px;
   flex-shrink: 0;
-  overflow-y: auto;
   border-right: 1px solid var(--color-border);
+  display: flex;
 }
 
 .app-content {

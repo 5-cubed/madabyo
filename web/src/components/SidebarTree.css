@@ -3,6 +3,9 @@
   color: var(--color-ink);
   padding: 0.5rem 0;
   font-size: 13px;
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
 }
 
 .tree-node {
