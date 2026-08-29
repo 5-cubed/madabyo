@@ -336,4 +336,28 @@ describe('PaneManager', () => {
     expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/file/meta'));
     expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/file?'));
   });
+
+  // Test: splitting an already-resized pane halves its own width
+  it('splitting an already-resized pane halves its own width, leaves siblings untouched', async () => {
+    const pm = new PaneManager(['pane-1']);
+    await pm.splitRight('pane-1');
+    // Now we have pane-1 and pane-2 at 50/50
+
+    // Resize pane-1 to 70%
+    pm.resizeDivider('pane-1', 20);
+    expect(pm.panes[0].width).toBe(70);
+    expect(pm.panes[1].width).toBe(30);
+
+    // Split pane-2 (the 30% pane)
+    await pm.splitRight('pane-2');
+    expect(pm.panes).toHaveLength(3);
+
+    // pane-1 should stay at 70%
+    expect(pm.panes[0].width).toBe(70);
+    // pane-2 and pane-3 should split the original 30% (15% each)
+    expect(pm.panes[1].width).toBe(15);
+    expect(pm.panes[2].width).toBe(15);
+    // All widths should sum to 100
+    expect(pm.panes[0].width + pm.panes[1].width + pm.panes[2].width).toBe(100);
+  });
 });

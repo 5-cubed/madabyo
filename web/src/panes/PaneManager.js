@@ -70,7 +70,16 @@ export class PaneManager {
 
   async splitRight(sourcePaneId) {
     const sourceIndex = this._panes.findIndex((p) => p.id === sourcePaneId);
+    const sourcePane = this._panes[sourceIndex];
+    const currentWidth = sourcePane.width ?? (100 / this._panes.length);
     const newPane = { id: `pane-${this._panes.length + 1}`, tabManager: new TabManager() };
+    sourcePane.width = currentWidth / 2;
+    newPane.width = currentWidth / 2;
+    // Assertion: split never changes the sum of the source pane's width
+    console.assert(
+      sourcePane.width + newPane.width === currentWidth,
+      `splitRight invariant violated: ${sourcePane.width} + ${newPane.width} != ${currentWidth}`
+    );
     this._panes.splice(sourceIndex + 1, 0, newPane);
   }
 

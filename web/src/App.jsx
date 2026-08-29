@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, Fragment } from 'react'
 import SidebarTree from './components/SidebarTree'
 import Pane from './components/Pane'
 import SplitContainer from './components/SplitContainer'
@@ -106,6 +106,8 @@ function App() {
     paneManagerRef.current = new PaneManager(['pane-1'])
   }
   const paneManager = paneManagerRef.current
+
+  const panesContentRef = useRef(null)
 
   // Fix activePaneId initialization after paneManager is ready
   if (activePaneId === null) {
@@ -397,8 +399,25 @@ function App() {
   }
 
   function handleResize(paneId, deltaPx) {
-    paneManager.resizeDivider(paneId, deltaPx)
+    // Convert pixels to percentage points: (pixels / container width) * 100
+    // This ensures 1px mouse movement moves the pane edge ~1px, not 12x faster
+    const containerRect = panesContentRef.current?.getBoundingClientRect();
+    const containerWidth = (containerRect?.width && containerRect.width > 0) ? containerRect.width : 1200;
+    const percentDelta = (deltaPx / containerWidth) * 100;
+    paneManager.resizeDivider(paneId, percentDelta)
     rerender()
+  }
+
+  function handleContentDividerMouseDown(paneId) {
+    const handleMouseMove = (e) => {
+      handleResize(paneId, e.movementX)
+    }
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
   }
 
   function handleClosePane(paneId) {
@@ -479,38 +498,56 @@ function App() {
             onResize={handleResize}
             onClosePane={handleClosePane}
           />
-          <div className="panes-content">
-            {paneManager.panes.map((pane) => (
-              <div
-                key={pane.id}
-                className="pane-content-wrapper"
-                style={pane.width != null ? { width: `${pane.width}%` } : undefined}
-                onMouseDown={() => setActivePaneId(pane.id)}
-              >
-                <Pane
-                  tabs={pane.tabManager.tabs}
-                  activeTabId={pane.tabManager.activeTabId}
-                  onSelectTab={(fileId) => {
-                    pane.tabManager.focusTab(fileId)
-                    rerender()
-                    // Refresh once when switching tabs
-                    paneManager.refreshTab(pane.id, fileId).then(rerender).catch((err) => {
-                      console.error('Failed to refresh tab:', err)
-                    })
-                  }}
-                  onCloseTab={(fileId) => {
-                    pane.tabManager.closeTab(fileId)
-                    rerender()
-                  }}
-                  onFollowLink={(href) => handleFollowLink(pane, href)}
-                  onToggleCheckbox={(index, checked) => {
-                    const result = paneManager.toggleCheckbox(pane.id, pane.tabManager.activeTabId, index, checked);
-                    rerender();
-                    return result;
-                  }}
-                />
-              </div>
-            ))}
+          <div className="panes-content" ref={panesContentRef}>
+            {paneManager.panes.map((pane, paneIndex) => {
+              const renderedWidth = pane.width ?? (100 / paneManager.panes.length);
+              // Assertion: rendered width is never undefined/NaN
+              console.assert(
+                Number.isFinite(renderedWidth),
+                `pane render width is not finite: width=${pane.width}, panes.length=${paneManager.panes.length}, computed=${renderedWidth}`
+              );
+              return (
+                <Fragment key={`pane-group-${pane.id}`}>
+                  <div
+                    key={pane.id}
+                    className="pane-content-wrapper"
+                    style={{ width: `${renderedWidth}%` }}
+                    onMouseDown={() => setActivePaneId(pane.id)}
+                  >
+                    <Pane
+                      tabs={pane.tabManager.tabs}
+                      activeTabId={pane.tabManager.activeTabId}
+                      onSelectTab={(fileId) => {
+                        pane.tabManager.focusTab(fileId)
+                        rerender()
+                        // Refresh once when switching tabs
+                        paneManager.refreshTab(pane.id, fileId).then(rerender).catch((err) => {
+                          console.error('Failed to refresh tab:', err)
+                        })
+                      }}
+                      onCloseTab={(fileId) => {
+                        pane.tabManager.closeTab(fileId)
+                        rerender()
+                      }}
+                      onFollowLink={(href) => handleFollowLink(pane, href)}
+                      onToggleCheckbox={(index, checked) => {
+                        const result = paneManager.toggleCheckbox(pane.id, pane.tabManager.activeTabId, index, checked);
+                        rerender();
+                        return result;
+                      }}
+                    />
+                  </div>
+                  {paneIndex < paneManager.panes.length - 1 && (
+                    <div
+                      role="separator"
+                      aria-label={`Resize ${pane.id}`}
+                      className="divider-content"
+                      onMouseDown={() => handleContentDividerMouseDown(pane.id)}
+                    />
+                  )}
+                </Fragment>
+              );
+            })}
           </div>
         </div>
       </div>
