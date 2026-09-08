@@ -1,3 +1,13 @@
+/*
+---
+type: Integration Test
+title: Sidebar tree persistence tests
+description: Verifies sidebar folder expansion persistence across remounts and path forms.
+tags: [test, sidebar, persistence]
+timestamp: 2026-09-08T16:34:00Z
+---
+*/
+
 import React from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -597,6 +607,130 @@ describe('Sidebar tree persistence', () => {
       docsElements = screen.queryAllByText('docs')
       expect(docsElements.length).toBeGreaterThan(0)
     }, { timeout: 2000 })
+  })
+
+  it('restores Windows folder state across slash forms and keeps nested memory', async () => {
+    const user = userEvent.setup({ delay: null })
+    const windowsPath = 'C:\\Notes'
+    const calls = []
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({ json: () => Promise.resolve({ workspacePath: windowsPath }) })
+      }
+      if (url.includes('/api/list')) {
+        const path = new URL(url, 'http://localhost').searchParams.get('path')
+        calls.push(path)
+        const entries = {
+          'C:\\Notes': [{ name: 'projects', isDir: true }],
+          'C:\\Notes/projects': [{ name: 'api', isDir: true }],
+          'C:\\Notes/projects/api': [{ name: 'index.md', isDir: false }]
+        }[path]
+        if (entries) return Promise.resolve({ json: () => Promise.resolve({ entries }) })
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    const { unmount } = render(<App />)
+    await waitFor(() => expect(screen.getByText('projects')).toBeInTheDocument())
+    expect(calls).toContain(windowsPath)
+
+    await user.click(screen.getByText('projects').closest('.tree-row'))
+    await waitFor(() => expect(screen.getByText('api')).toBeInTheDocument())
+    expect(calls).toContain('C:\\Notes/projects')
+
+    await user.click(screen.getByText('api').closest('.tree-row'))
+    await waitFor(() => expect(screen.getByText('index.md')).toBeInTheDocument())
+    await user.click(screen.getByText('projects').closest('.tree-row'))
+    await waitFor(() => expect(screen.queryByText('index.md')).not.toBeInTheDocument())
+
+    let saved = JSON.parse(localStorage.getItem('madabyo:sidebar:C:/Notes'))
+    expect(saved).toEqual(['C:/Notes/projects/api'])
+
+    // Reopening the parent keeps the remembered nested folder open.
+    await user.click(screen.getByText('projects').closest('.tree-row'))
+    await waitFor(() => expect(screen.getByText('index.md')).toBeInTheDocument())
+
+    // Collapse the parent before remounting; the nested folder remains remembered.
+    await user.click(screen.getByText('projects').closest('.tree-row'))
+    await waitFor(() => expect(screen.queryByText('index.md')).not.toBeInTheDocument())
+    saved = JSON.parse(localStorage.getItem('madabyo:sidebar:C:/Notes'))
+    expect(saved).toEqual(['C:/Notes/projects/api'])
+
+    unmount()
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({ json: () => Promise.resolve({ workspacePath: 'C:/Notes' }) })
+      }
+      if (url.includes('/api/list')) {
+        const path = new URL(url, 'http://localhost').searchParams.get('path')
+        calls.push(path)
+        const entries = {
+          'C:/Notes': [{ name: 'projects', isDir: true }],
+          'C:/Notes/projects': [{ name: 'api', isDir: true }],
+          'C:/Notes/projects/api': [{ name: 'index.md', isDir: false }]
+        }[path]
+        if (entries) return Promise.resolve({ json: () => Promise.resolve({ entries }) })
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+    await waitFor(() => expect(screen.getByText('projects')).toBeInTheDocument())
+    expect(screen.queryByText('index.md')).not.toBeInTheDocument()
+    expect(calls).toContain('C:/Notes/projects')
+
+    await user.click(screen.getByText('projects').closest('.tree-row'))
+    await waitFor(() => expect(screen.getByText('index.md')).toBeInTheDocument())
+  })
+
+  it('restores saved folders from the legacy raw Windows key', async () => {
+    localStorage.setItem('madabyo:sidebar:C:\\Notes', JSON.stringify(['C:\\Notes\\projects']))
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({ json: () => Promise.resolve({ workspacePath: 'C:\\Notes' }) })
+      }
+      if (url.includes('/api/list')) {
+        const path = new URL(url, 'http://localhost').searchParams.get('path')
+        const entries = {
+          'C:\\Notes': [{ name: 'projects', isDir: true }],
+          'C:\\Notes/projects': [{ name: 'notes.md', isDir: false }]
+        }[path]
+        if (entries) return Promise.resolve({ json: () => Promise.resolve({ entries }) })
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+    await waitFor(() => expect(screen.getByText('notes.md')).toBeInTheDocument())
+  })
+
+  it('keeps normalized persistence separate from runtime API paths', async () => {
+    const user = userEvent.setup({ delay: null })
+    const calls = []
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/settings')) {
+        return Promise.resolve({ json: () => Promise.resolve({ workspacePath: 'C:\\Notes' }) })
+      }
+      if (url.includes('/api/list')) {
+        const path = new URL(url, 'http://localhost').searchParams.get('path')
+        calls.push(path)
+        const entries = path === 'C:\\Notes'
+          ? [{ name: 'projects', isDir: true }]
+          : [{ name: 'notes.md', isDir: false }]
+        return Promise.resolve({ json: () => Promise.resolve({ entries }) })
+      }
+      return Promise.reject(new Error('Unexpected fetch: ' + url))
+    })
+
+    render(<App />)
+    await waitFor(() => expect(screen.getByText('projects')).toBeInTheDocument())
+    await user.click(screen.getByText('projects').closest('.tree-row'))
+    await waitFor(() => expect(screen.getByText('notes.md')).toBeInTheDocument())
+
+    expect(calls).toEqual(['C:\\Notes', 'C:\\Notes/projects'])
+    expect(localStorage.getItem('madabyo:sidebar:C:/Notes')).toBe(JSON.stringify(['C:/Notes/projects']))
   })
 
   it('saves one open folder to localStorage', async () => {

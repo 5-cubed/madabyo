@@ -1,3 +1,13 @@
+/*
+---
+type: React Component
+title: Markdown viewer application
+description: Renders the viewer shell and persists sidebar folder expansion state.
+tags: [react, sidebar, persistence]
+timestamp: 2026-09-08T16:34:00Z
+---
+*/
+
 import React, { useRef, useState, useEffect, Fragment } from 'react'
 import SidebarTree from './components/SidebarTree'
 import Pane from './components/Pane'
@@ -29,6 +39,13 @@ function isAllowedMarkdownFile(name) {
 // Helper: normalize backslashes to forward slashes for cross-platform path handling
 function normalizeSlashes(p) {
   return p.replace(/\\/g, '/')
+}
+
+function resolveRuntimePath(path, workspacePath) {
+  const normalizedWorkspacePath = normalizeSlashes(workspacePath)
+  if (path === normalizedWorkspacePath) return workspacePath
+  const prefix = `${normalizedWorkspacePath}/`
+  return path.startsWith(prefix) ? `${workspacePath}${path.slice(normalizedWorkspacePath.length)}` : null
 }
 
 // Helper: convert API list entries to tree nodes
@@ -190,7 +207,9 @@ function App() {
               updated = updated.slice(1)
             }
             if (workspacePath) {
-              localStorage.setItem(`madabyo:sidebar:${workspacePath}`, JSON.stringify(updated))
+              const storageKey = `madabyo:sidebar:${normalizeSlashes(workspacePath)}`
+              localStorage.removeItem(`${storageKey}:collapsed:${normalizeSlashes(path)}`)
+              localStorage.setItem(storageKey, JSON.stringify(updated.map(normalizeSlashes)))
             }
             return updated
           }
@@ -207,9 +226,11 @@ function App() {
   const handleCollapseDir = (path) => {
     if (path !== workspacePath) {
       setExpandedPaths((prev) => {
-        const updated = prev.filter((p) => p !== path)
+        const updated = prev.filter((p) => normalizeSlashes(p) !== normalizeSlashes(path))
         if (workspacePath) {
-          localStorage.setItem(`madabyo:sidebar:${workspacePath}`, JSON.stringify(updated))
+          const storageKey = `madabyo:sidebar:${normalizeSlashes(workspacePath)}`
+          localStorage.setItem(`${storageKey}:collapsed:${normalizeSlashes(path)}`, '1')
+          localStorage.setItem(storageKey, JSON.stringify(updated.map(normalizeSlashes)))
         }
         return updated
       })
@@ -235,15 +256,17 @@ function App() {
   // Restore expanded folders after tree loads
   useEffect(() => {
     if (treeStatus === 'ready' && workspacePath && expandedPaths.length === 0) {
-      const saved = localStorage.getItem(`madabyo:sidebar:${workspacePath}`)
+      const normalizedWorkspacePath = normalizeSlashes(workspacePath)
+      const normalizedKey = `madabyo:sidebar:${normalizedWorkspacePath}`
+      const saved = localStorage.getItem(normalizedKey) ?? localStorage.getItem(`madabyo:sidebar:${workspacePath}`)
       if (saved) {
-        const savedPaths = JSON.parse(saved)
+        const savedPaths = JSON.parse(saved).map(normalizeSlashes)
 
         // Insert missing ancestors before the saved paths (shallowest first)
         const pathsToRestore = []
         const seen = new Set()
         for (const path of savedPaths) {
-          const ancestors = getAncestors(path, workspacePath)
+          const ancestors = getAncestors(path, normalizedWorkspacePath)
           for (const ancestor of ancestors) {
             if (!seen.has(ancestor)) {
               pathsToRestore.push(ancestor)
@@ -259,19 +282,25 @@ function App() {
         ;(async () => {
           // ponytail: sequential, one request per folder; upgrade path is a batch endpoint if it ever gets slow
           for (const path of pathsToRestore) {
+            const runtimePath = resolveRuntimePath(path, workspacePath)
+            if (!runtimePath) {
+              console.error(`Failed to restore folder ${path}: path is outside workspace`)
+              continue
+            }
             try {
-              const listRes = await fetch(`/api/list?path=${encodeURIComponent(path)}`)
+              console.assert(normalizeSlashes(runtimePath) === path, 'Restore must request the runtime path')
+              const listRes = await fetch(`/api/list?path=${encodeURIComponent(runtimePath)}`)
               const listResult = await listRes.json()
 
               if (!listResult.error) {
                 setTree((prevTree) => {
                   if (!prevTree) return prevTree
-                  return mergeTreeNode({ ...prevTree }, listResult.entries || [], path)
+                  return mergeTreeNode({ ...prevTree }, listResult.entries || [], runtimePath)
                 })
 
                 setExpandedPaths((prev) => {
-                  if (!prev.includes(path)) {
-                    return [...prev, path]
+                  if (!prev.includes(runtimePath) && !localStorage.getItem(`${normalizedKey}:collapsed:${path}`)) {
+                    return [...prev, runtimePath]
                   }
                   return prev
                 })
@@ -281,14 +310,14 @@ function App() {
                   await fetch('/api/log', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ level: 'error', message: `Cannot list folder: ${path}` })
+                    body: JSON.stringify({ level: 'error', message: `Cannot list folder: ${runtimePath}` })
                   })
                 } catch (logErr) {
                   console.error('Failed to log dropped folder:', logErr)
                 }
               }
             } catch (err) {
-              console.error(`Failed to restore folder ${path}:`, err)
+              console.error(`Failed to restore folder ${runtimePath}:`, err)
             }
           }
         })()
