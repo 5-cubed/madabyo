@@ -113,19 +113,58 @@ describe('MarkdownRenderer', () => {
     expect(result.content).toBe(content);
   });
 
+  it('renders standard YAML values and preserves meaningful multiline text', async () => {
+    const content = '---\n# metadata comment\ntitle: Notes\ntags:\n  - one\n  - two\noptions:\n  draft: false\n  owner: team\nsummary: |\n  Keep this line.\n  And this line.\n---\n# Body\n\nText';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ json: async () => ({ content }) }));
+
+    const result = await MarkdownRenderer.renderFile('/path/to/standard-yaml.md');
+
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<td>title</td><td>Notes</td>');
+    expect(result.html).toContain('<td>tags</td><td>["one","two"]</td>');
+    expect(result.html).toContain('<td>options</td><td>{"draft":false,"owner":"team"}</td>');
+    expect(result.html).toContain('<td>summary</td><td>Keep this line.<br>And this line.');
+    expect(result.html).toContain('<h1>Body</h1>');
+    expect(result.html).toContain('<p>Text</p>');
+    expect(result.content).toBe(content);
+  });
+
+  it('renders an empty leading frontmatter block', async () => {
+    const content = '---\n---\n# Body';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ json: async () => ({ content }) }));
+
+    const result = await MarkdownRenderer.renderFile('/path/to/empty-frontmatter.md');
+
+    expect(result.status).toBe('ok');
+    expect(result.html.match(/<table>/g)).toHaveLength(1);
+    expect(result.html).toContain('<th>Key</th><th>Value</th>');
+    expect(result.html).toContain('<h1>Body</h1>');
+    expect(result.content).toBe(content);
+  });
+
   it('escapes frontmatter text and leaves a later YAML fence unchanged', async () => {
-    const content = '---\ntitle: <Notes> & stuff\n---\n\n```yaml\n---\ninside: unchanged\n---\n```';
+    const content = '---\n"title<": "<Notes> & stuff"\n---\n\n```yaml\n---\ninside: unchanged\n---\n```';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ json: async () => ({ content }) }));
 
     const result = await MarkdownRenderer.renderFile('/path/to/frontmatter-code.md');
 
     expect(result.status).toBe('ok');
-    expect(result.html).toContain('<td>title</td><td>&lt;Notes&gt; &amp; stuff</td>');
+    expect(result.html).toContain('<td>title&lt;</td><td>&lt;Notes&gt; &amp; stuff</td>');
     expect(result.html.match(/<table>/g)).toHaveLength(1);
     expect(result.html).toContain('<pre');
     expect(result.html).toContain('inside');
     expect(result.html).not.toContain('<td>inside</td>');
     expect(result.content).toBe(content);
+  });
+
+  // Test: rendering with headings, lists, and code blocks
+  it('returns render-error instead of exposing malformed YAML as HTML', async () => {
+    const content = '---\ntitle: [unterminated\n---\n<script>alert(1)</script>';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ json: async () => ({ content }) }));
+
+    const result = await MarkdownRenderer.renderFile('/path/to/malformed-frontmatter.md');
+
+    expect(result).toEqual({ status: 'render-error' });
   });
 
   // Test: rendering with headings, lists, and code blocks

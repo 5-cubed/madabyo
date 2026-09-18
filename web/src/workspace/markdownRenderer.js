@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import { parseDocument } from 'yaml';
 import { renderDiagram } from './diagramRenderer.js';
 
 // Minimal HTML escape for error messages and raw diagram source
@@ -12,16 +13,29 @@ function escapeHtml(text) {
 }
 
 function renderFrontmatter(text) {
-  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?=\r?\n|$)/);
-  if (!match) return text;
+  const opening = text.match(/^---[ \t]*(?:\r\n|\n|\r)/);
+  if (!opening) return text;
 
-  const rows = match[1].split(/\r?\n/).flatMap((line) => {
-    const separator = line.indexOf(':');
-    if (separator <= 0 || /^\s/.test(line)) return [];
-    return `<tr><td>${escapeHtml(line.slice(0, separator).trim())}</td><td>${escapeHtml(line.slice(separator + 1).trim())}</td></tr>`;
-  }).join('');
+  const remainder = text.slice(opening[0].length);
+  const closing = remainder.match(/^---[ \t]*(?=\r\n|\n|\r|$)/m);
+  if (!closing) return text;
+
+  const document = parseDocument(remainder.slice(0, closing.index));
+  if (document.errors.length) throw document.errors[0];
+
+  const frontmatter = document.toJS();
+  const entries = frontmatter && typeof frontmatter === 'object' && !Array.isArray(frontmatter)
+    ? Object.entries(frontmatter)
+    : [];
+  const formatValue = (value) => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') return JSON.stringify(value);
+    return String(value ?? '');
+  };
+  const formatCell = (value) => escapeHtml(formatValue(value)).replace(/\r?\n/g, '<br>');
+  const rows = entries.map(([key, value]) => `<tr><td>${formatCell(key)}</td><td>${formatCell(value)}</td></tr>`).join('');
   const table = `<table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table>`;
-  return table + '\n' + text.slice(match[0].length);
+  return table + '\n' + remainder.slice(closing.index + closing[0].length);
 }
 
 // Lazy singleton for Shiki highlighter; holds the getHighlighter promise once created.

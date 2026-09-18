@@ -18,7 +18,8 @@
     "mermaid": "^11.16.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "shiki": "^4.4.2"
+    "shiki": "^4.4.2",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",
