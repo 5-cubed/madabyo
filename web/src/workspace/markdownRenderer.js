@@ -11,6 +11,19 @@ function escapeHtml(text) {
   return text.replace(/[&<>]/g, (char) => map[char]);
 }
 
+function renderFrontmatter(text) {
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?=\r?\n|$)/);
+  if (!match) return text;
+
+  const rows = match[1].split(/\r?\n/).flatMap((line) => {
+    const separator = line.indexOf(':');
+    if (separator <= 0 || /^\s/.test(line)) return [];
+    return `<tr><td>${escapeHtml(line.slice(0, separator).trim())}</td><td>${escapeHtml(line.slice(separator + 1).trim())}</td></tr>`;
+  }).join('');
+  const table = `<table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return table + '\n' + text.slice(match[0].length);
+}
+
 // Lazy singleton for Shiki highlighter; holds the getHighlighter promise once created.
 // ponytail: singleton per process; upgrade to per-worker if throughput matters
 let highlighterPromise;
@@ -164,7 +177,7 @@ export async function renderFile(path) {
 
   // Parse the markdown to HTML, with render-error handling
   try {
-    let html = await marked.parse(text);
+    let html = await marked.parse(renderFrontmatter(text));
 
     // Add data-index to checkboxes for interactive toggling, remove disabled attribute
     let checkboxIndex = 0;

@@ -99,6 +99,35 @@ describe('MarkdownRenderer', () => {
     );
   });
 
+  it('renders leading frontmatter as a table and preserves the original body and content', async () => {
+    const content = '---\ntitle: Notes\nstatus: draft\n---\n# Body\n\nText';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ json: async () => ({ content }) }));
+
+    const result = await MarkdownRenderer.renderFile('/path/to/frontmatter.md');
+
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<table><thead><tr><th>Key</th><th>Value</th></tr></thead>');
+    expect(result.html).toContain('<td>title</td><td>Notes</td>');
+    expect(result.html).toContain('<h1>Body</h1>');
+    expect(result.html).toContain('<p>Text</p>');
+    expect(result.content).toBe(content);
+  });
+
+  it('escapes frontmatter text and leaves a later YAML fence unchanged', async () => {
+    const content = '---\ntitle: <Notes> & stuff\n---\n\n```yaml\n---\ninside: unchanged\n---\n```';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ json: async () => ({ content }) }));
+
+    const result = await MarkdownRenderer.renderFile('/path/to/frontmatter-code.md');
+
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<td>title</td><td>&lt;Notes&gt; &amp; stuff</td>');
+    expect(result.html.match(/<table>/g)).toHaveLength(1);
+    expect(result.html).toContain('<pre');
+    expect(result.html).toContain('inside');
+    expect(result.html).not.toContain('<td>inside</td>');
+    expect(result.content).toBe(content);
+  });
+
   // Test: rendering with headings, lists, and code blocks
   it('renders markdown with headings, lists, and code blocks', async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce({
