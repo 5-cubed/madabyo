@@ -2,6 +2,7 @@ export class TabManager {
   constructor() {
     this._tabs = [];
     this._activeTabId = null;
+    this._scrollPositions = new Map();
   }
 
   get tabs() {
@@ -20,6 +21,7 @@ export class TabManager {
     }
 
     this._tabs.push({ fileId, renderResult, mtime });
+    this._scrollPositions.set(fileId, 0);
     this._activeTabId = fileId;
   }
 
@@ -35,9 +37,20 @@ export class TabManager {
     }
   }
 
+  getScrollPosition(fileId) {
+    return this._scrollPositions.get(fileId) ?? 0;
+  }
+
+  setScrollPosition(fileId, position) {
+    if (this._tabs.some((tab) => tab.fileId === fileId)) {
+      this._scrollPositions.set(fileId, position);
+    }
+  }
+
   closeTab(fileId) {
     const closedIndex = this._tabs.findIndex((t) => t.fileId === fileId);
     this._tabs = this._tabs.filter((t) => t.fileId !== fileId);
+    this._scrollPositions.delete(fileId);
 
     if (this._activeTabId === fileId) {
       if (this._tabs.length > 0) {

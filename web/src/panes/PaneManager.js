@@ -29,6 +29,18 @@ export class PaneManager {
     pane.tabManager.openTab(fileId, result, mtime);
   }
 
+  getTabScrollPosition(paneId, fileId) {
+    const pane = this._panes.find((p) => p.id === paneId);
+    return pane ? pane.tabManager.getScrollPosition(fileId) : 0;
+  }
+
+  setTabScrollPosition(paneId, fileId, position) {
+    const pane = this._panes.find((p) => p.id === paneId);
+    if (pane) {
+      pane.tabManager.setScrollPosition(fileId, position);
+    }
+  }
+
   async refreshTab(paneId, fileId) {
     const pane = this._panes.find((p) => p.id === paneId);
     if (!pane) return;

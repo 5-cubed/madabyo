@@ -213,6 +213,20 @@ describe('PaneManager', () => {
     expect(pm.panes[1].width).toBe(80);
   });
 
+  it('keeps scroll positions independent for the same file in separate panes', async () => {
+    const pm = new PaneManager(['pane-1']);
+    await pm.splitRight('pane-1');
+    for (const pane of pm.panes) {
+      pane.tabManager.openTab('/tmp/notes.md', { status: 'ok', html: '<h1>Notes</h1>' });
+    }
+
+    pm.setTabScrollPosition('pane-1', '/tmp/notes.md', 500);
+    pm.setTabScrollPosition('pane-2', '/tmp/notes.md', 200);
+
+    expect(pm.getTabScrollPosition('pane-1', '/tmp/notes.md')).toBe(500);
+    expect(pm.getTabScrollPosition('pane-2', '/tmp/notes.md')).toBe(200);
+  });
+
   // Test: closePane
   it('closes a pane and expands the survivor to full width', async () => {
     mockFetchFile('/tmp/notes.md', '# Hi', '/tmp/notes.md', '# Hi');

@@ -122,6 +122,65 @@ describe('Pane', () => {
     expect(onSelectTabSpy).toHaveBeenCalledWith('b.md');
   });
 
+  it('captures and restores independent scroll positions when switching tabs', () => {
+    function ScrollHarness() {
+      const [activeTabId, setActiveTabId] = React.useState('a.md');
+      const positions = React.useRef({ 'a.md': 0, 'b.md': 0 });
+      const tabs = [
+        { fileId: 'a.md', renderResult: { status: 'ok', html: '<h1>A</h1>' } },
+        { fileId: 'b.md', renderResult: { status: 'ok', html: '<h1>B</h1>' } },
+      ];
+
+      return (
+        <Pane
+          tabs={tabs}
+          activeTabId={activeTabId}
+          activeTabScrollPosition={positions.current[activeTabId]}
+          onSelectTab={setActiveTabId}
+          onCloseTab={() => {}}
+          onScrollPositionChange={(position) => { positions.current[activeTabId] = position; }}
+        />
+      );
+    }
+
+    const { container } = render(<ScrollHarness />);
+    const content = container.querySelector('.pane-content');
+
+    content.scrollTop = 500;
+    fireEvent.scroll(content);
+    fireEvent.click(screen.getByRole('tab', { name: 'b.md' }));
+    expect(content.scrollTop).toBe(0);
+
+    content.scrollTop = 200;
+    fireEvent.scroll(content);
+    fireEvent.click(screen.getByRole('tab', { name: 'a.md' }));
+    expect(content.scrollTop).toBe(500);
+  });
+
+  it('restores position when the active tab renders again after an error', () => {
+    function RefreshHarness() {
+      const [renderResult, setRenderResult] = React.useState({ status: 'render-error' });
+
+      return (
+        <>
+          <button onClick={() => setRenderResult({ status: 'ok', html: '<h1>A</h1>' })}>Retry</button>
+          <Pane
+            tabs={[{ fileId: 'a.md', renderResult }]}
+            activeTabId="a.md"
+            activeTabScrollPosition={500}
+            onSelectTab={() => {}}
+            onCloseTab={() => {}}
+          />
+        </>
+      );
+    }
+
+    const { container } = render(<RefreshHarness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(container.querySelector('.pane-content').scrollTop).toBe(500);
+  });
+
   // Step 33 test: close button presence
   it('shows close button for each tab (Step 33)', () => {
     render(

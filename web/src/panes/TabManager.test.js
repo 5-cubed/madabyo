@@ -52,6 +52,18 @@ describe('TabManager', () => {
     expect(tm.tabs[0].renderResult.html).toBe('<h1>A</h1>');
   });
 
+  it('keeps a scroll position for an open tab and discards it when closed', () => {
+    const tm = new TabManager();
+    tm.openTab('a.md', { status: 'ok', html: '<h1>A</h1>' });
+    tm.setScrollPosition('a.md', 500);
+
+    expect(tm.getScrollPosition('a.md')).toBe(500);
+
+    tm.closeTab('a.md');
+    tm.openTab('a.md', { status: 'ok', html: '<h1>A</h1>' });
+    expect(tm.getScrollPosition('a.md')).toBe(0);
+  });
+
   // Step 31 test scenarios (SEQ-015 + SEQ-016)
   describe('closeTab', () => {
     // Scenario 1: closing non-active tab

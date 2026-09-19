@@ -546,6 +546,7 @@ function App() {
                     <Pane
                       tabs={pane.tabManager.tabs}
                       activeTabId={pane.tabManager.activeTabId}
+                      activeTabScrollPosition={paneManager.getTabScrollPosition(pane.id, pane.tabManager.activeTabId)}
                       onSelectTab={(fileId) => {
                         pane.tabManager.focusTab(fileId)
                         rerender()
@@ -563,6 +564,9 @@ function App() {
                         const result = paneManager.toggleCheckbox(pane.id, pane.tabManager.activeTabId, index, checked);
                         rerender();
                         return result;
+                      }}
+                      onScrollPositionChange={(position) => {
+                        paneManager.setTabScrollPosition(pane.id, pane.tabManager.activeTabId, position)
                       }}
                     />
                   </div>

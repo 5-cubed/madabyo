@@ -35,10 +35,17 @@ function handlePaneClick(event, onFollowLink, onToggleCheckbox) {
   }
 }
 
-export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab, onFollowLink, onToggleCheckbox }) {
+export default function Pane({ tabs, activeTabId, activeTabScrollPosition = 0, onSelectTab, onCloseTab, onFollowLink, onToggleCheckbox, onScrollPositionChange }) {
   const activeTab = tabs.find((t) => t.fileId === activeTabId);
   const html = activeTab?.renderResult?.html ?? '';
   const dangerousHtml = React.useMemo(() => ({ __html: html }), [html]);
+  const contentRef = React.useRef(null);
+
+  React.useLayoutEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = activeTabScrollPosition;
+    }
+  }, [activeTabId, activeTabScrollPosition, html]);
 
   // Empty state
   if (!activeTab) {
@@ -70,7 +77,7 @@ export default function Pane({ tabs, activeTabId, onSelectTab, onCloseTab, onFol
             </span>
           ))}
         </div>
-        <div className="pane-content" onClick={(e) => handlePaneClick(e, onFollowLink, onToggleCheckbox)} dangerouslySetInnerHTML={dangerousHtml} />
+        <div ref={contentRef} className="pane-content" onClick={(e) => handlePaneClick(e, onFollowLink, onToggleCheckbox)} onScroll={(e) => onScrollPositionChange?.(e.currentTarget.scrollTop)} dangerouslySetInnerHTML={dangerousHtml} />
       </div>
     );
   }
