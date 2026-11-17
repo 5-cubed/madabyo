@@ -116,6 +116,7 @@ function mergeTreeNode(existing, newEntries, path) {
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [headingRequests, setHeadingRequests] = useState({})
   const [activePaneId, setActivePaneId] = useState(null)
 
   const paneManagerRef = useRef(null)
@@ -404,8 +405,16 @@ function App() {
 
   async function handleFollowLink(pane, href) {
     const nid = normalizeSlashes(pane.tabManager.activeTabId)
-    const dir = nid.slice(0, nid.lastIndexOf('/'))
-    const resolvedUrl = new URL(href, `file://${dir}/`).pathname
+    const currentUrl = new URL(`file://${nid}`)
+    const url = new URL(href, currentUrl)
+    const resolvedUrl = url.pathname
+    const resolved = resolvedUrl.replace(/^\/([A-Za-z]:\/)/, '$1')
+    if (url.hash && resolvedUrl === currentUrl.pathname) {
+      setHeadingRequests((requests) => ({
+        ...requests, [pane.id]: { fileId: pane.tabManager.activeTabId, fragment: url.hash.slice(1) },
+      }))
+      return
+    }
     const name = resolvedUrl.slice(resolvedUrl.lastIndexOf('/') + 1)
     if (!isAllowedMarkdownFile(name)) return
 
@@ -417,7 +426,6 @@ function App() {
       return
     }
 
-    const resolved = resolvedUrl.replace(/^\/([A-Za-z]:\/)/, '$1')
     await paneManager.openFile(pane.id, resolved)
     rerender()
   }
@@ -545,6 +553,7 @@ function App() {
                   >
                     <Pane
                       tabs={pane.tabManager.tabs}
+                      headingRequest={headingRequests[pane.id]}
                       activeTabId={pane.tabManager.activeTabId}
                       activeTabScrollPosition={paneManager.getTabScrollPosition(pane.id, pane.tabManager.activeTabId)}
                       onSelectTab={(fileId) => {

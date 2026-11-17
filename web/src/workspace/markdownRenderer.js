@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { marked, Renderer } from 'marked';
 import { parseDocument } from 'yaml';
 import { renderDiagram } from './diagramRenderer.js';
 
@@ -191,7 +191,26 @@ export async function renderFile(path) {
 
   // Parse the markdown to HTML, with render-error handling
   try {
-    let html = await marked.parse(renderFrontmatter(text));
+    const headingIds = new Set();
+    let html = await marked.parse(renderFrontmatter(text), {
+      renderer: Object.assign(new Renderer(), {
+        heading({ tokens, depth }) {
+          const content = this.parser.parseInline(tokens);
+          const heading = document.createElement('template');
+          heading.innerHTML = content;
+          for (const image of heading.content.querySelectorAll('img')) {
+            image.replaceWith(image.alt);
+          }
+          const base = heading.content.textContent.trim().toLowerCase()
+            .replace(/[^\p{L}\p{M}\p{N}_\- ]/gu, '').replace(/ /g, '-');
+          let id = base;
+          let suffix = 0;
+          while (headingIds.has(id)) id = `${base}-${++suffix}`;
+          headingIds.add(id);
+          return `<h${depth} id="${id}">${content}</h${depth}>\n`;
+        },
+      }),
+    });
 
     // Add data-index to checkboxes for interactive toggling, remove disabled attribute
     let checkboxIndex = 0;

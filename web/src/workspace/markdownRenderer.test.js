@@ -91,7 +91,7 @@ describe('MarkdownRenderer', () => {
     const result = await MarkdownRenderer.renderFile('/path/to/notes.md');
     expect(result).toEqual({
       status: 'ok',
-      html: expect.stringContaining('<h1>Hello</h1>'),
+      html: expect.stringContaining('<h1 id="hello">Hello</h1>'),
       content: '# Hello',
     });
     expect(mockFetch).toHaveBeenCalledWith(
@@ -108,7 +108,7 @@ describe('MarkdownRenderer', () => {
     expect(result.status).toBe('ok');
     expect(result.html).toContain('<table><thead><tr><th>Key</th><th>Value</th></tr></thead>');
     expect(result.html).toContain('<td>title</td><td>Notes</td>');
-    expect(result.html).toContain('<h1>Body</h1>');
+    expect(result.html).toContain('<h1 id="body">Body</h1>');
     expect(result.html).toContain('<p>Text</p>');
     expect(result.content).toBe(content);
   });
@@ -124,7 +124,7 @@ describe('MarkdownRenderer', () => {
     expect(result.html).toContain('<td>tags</td><td>["one","two"]</td>');
     expect(result.html).toContain('<td>options</td><td>{"draft":false,"owner":"team"}</td>');
     expect(result.html).toContain('<td>summary</td><td>Keep this line.<br>And this line.');
-    expect(result.html).toContain('<h1>Body</h1>');
+    expect(result.html).toContain('<h1 id="body">Body</h1>');
     expect(result.html).toContain('<p>Text</p>');
     expect(result.content).toBe(content);
   });
@@ -138,7 +138,7 @@ describe('MarkdownRenderer', () => {
     expect(result.status).toBe('ok');
     expect(result.html.match(/<table>/g)).toHaveLength(1);
     expect(result.html).toContain('<th>Key</th><th>Value</th>');
-    expect(result.html).toContain('<h1>Body</h1>');
+    expect(result.html).toContain('<h1 id="body">Body</h1>');
     expect(result.content).toBe(content);
   });
 
@@ -178,7 +178,7 @@ describe('MarkdownRenderer', () => {
 
     const result = await MarkdownRenderer.renderFile('/path/to/guide.md');
     expect(result.status).toBe('ok');
-    expect(result.html).toContain('<h2>Section</h2>');
+    expect(result.html).toContain('<h2 id="section">Section</h2>');
     expect(result.html).toContain('<li>item</li>');
     expect(result.html).toContain('<pre');
     expect(result.html).toContain('<code');

@@ -285,7 +285,7 @@ describe('Pane', () => {
   });
 
   // Link following: mailto and anchor links
-  it('does nothing for mailto and same-page anchor links', () => {
+  it('leaves mailto links alone and routes same-page anchors to pane navigation', () => {
     const onFollowLinkSpy = vi.fn();
     const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
     render(
@@ -298,8 +298,10 @@ describe('Pane', () => {
       />
     );
     fireEvent.click(screen.getByRole('link', { name: 'mail' }));
-    fireEvent.click(screen.getByRole('link', { name: 'anchor' }));
     expect(onFollowLinkSpy).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('link', { name: 'anchor' }));
+    expect(onFollowLinkSpy).toHaveBeenCalledOnce();
+    expect(onFollowLinkSpy).toHaveBeenCalledWith('#section');
     expect(windowOpenSpy).not.toHaveBeenCalled();
     windowOpenSpy.mockRestore();
   });

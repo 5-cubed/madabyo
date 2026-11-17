@@ -15,7 +15,7 @@ function handlePaneClick(event, onFollowLink, onToggleCheckbox) {
       window.open(href, '_blank', 'noopener,noreferrer')
       return
     }
-    if (href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
       return
     }
     event.preventDefault()
@@ -35,7 +35,7 @@ function handlePaneClick(event, onFollowLink, onToggleCheckbox) {
   }
 }
 
-export default function Pane({ tabs, activeTabId, activeTabScrollPosition = 0, onSelectTab, onCloseTab, onFollowLink, onToggleCheckbox, onScrollPositionChange }) {
+export default function Pane({ tabs, activeTabId, activeTabScrollPosition = 0, headingRequest, onSelectTab, onCloseTab, onFollowLink, onToggleCheckbox, onScrollPositionChange }) {
   const activeTab = tabs.find((t) => t.fileId === activeTabId);
   const html = activeTab?.renderResult?.html ?? '';
   const dangerousHtml = React.useMemo(() => ({ __html: html }), [html]);
@@ -46,6 +46,21 @@ export default function Pane({ tabs, activeTabId, activeTabScrollPosition = 0, o
       contentRef.current.scrollTop = activeTabScrollPosition;
     }
   }, [activeTabId, activeTabScrollPosition, html]);
+
+  const consumedHeadingRequest = React.useRef(null);
+  React.useLayoutEffect(() => {
+    if (!headingRequest || consumedHeadingRequest.current === headingRequest) return;
+    consumedHeadingRequest.current = headingRequest;
+    if (headingRequest.fileId !== activeTabId || !contentRef.current) return;
+    let id;
+    try { id = decodeURIComponent(headingRequest.fragment); } catch { return; }
+    const content = contentRef.current;
+    const heading = [...content.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]')]
+      .find((element) => element.id === id);
+    if (!heading) return;
+    content.scrollTop += heading.getBoundingClientRect().top - content.getBoundingClientRect().top - content.clientTop;
+    onScrollPositionChange?.(content.scrollTop);
+  }, [headingRequest, activeTabId, html, onScrollPositionChange]);
 
   // Empty state
   if (!activeTab) {

@@ -39,7 +39,7 @@ describe('PaneManager', () => {
     expect(pane.tabManager.tabs).toEqual([
       {
         fileId: '/tmp/notes.md',
-        renderResult: { status: 'ok', html: expect.stringContaining('<h1>Hi</h1>'), content: '# Hi' },
+        renderResult: { status: 'ok', html: expect.stringContaining('<h1 id="hi">Hi</h1>'), content: '# Hi' },
         mtime: expect.any(Number),
       },
     ]);
@@ -55,7 +55,7 @@ describe('PaneManager', () => {
     await pm.openFile('pane-1', '/tmp/notes.md');
     const pane = pm.panes.find((p) => p.id === 'pane-1');
     expect(pane.tabManager.tabs).toHaveLength(2);
-    expect(pane.tabManager.tabs[0].renderResult.html).toContain('<h1>Hi</h1>');
+    expect(pane.tabManager.tabs[0].renderResult.html).toContain('<h1 id="hi">Hi</h1>');
     expect(pane.tabManager.activeTabId).toBe('/tmp/notes.md');
   });
 
@@ -96,7 +96,7 @@ describe('PaneManager', () => {
     await pm.refreshTab('pane-1', '/tmp/a.md');
 
     const pane = pm.panes.find((p) => p.id === 'pane-1');
-    expect(pane.tabManager.tabs[0].renderResult.html).toContain('<h1>A Updated</h1>');
+    expect(pane.tabManager.tabs[0].renderResult.html).toContain('<h1 id="a-updated">A Updated</h1>');
     expect(pane.tabManager.activeTabId).toBe('/tmp/b.md');
     expect(pane.tabManager.tabs.map((t) => t.fileId)).toEqual(['/tmp/a.md', '/tmp/b.md']);
   });
