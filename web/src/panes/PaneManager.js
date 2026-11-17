@@ -14,7 +14,7 @@ export class PaneManager {
     return this._panes;
   }
 
-  async openFile(paneId, path) {
+  async openFile(paneId, path, shouldOpen = () => true) {
     const pane = this._panes.find((p) => p.id === paneId);
     const fileId = path;
 
@@ -26,7 +26,7 @@ export class PaneManager {
     const result = await MarkdownRenderer.renderFile(path);
     const meta = await MarkdownRenderer.fetchMeta(path);
     const mtime = meta.status === 'ok' ? meta.mtime : null;
-    pane.tabManager.openTab(fileId, result, mtime);
+    if (shouldOpen()) pane.tabManager.openTab(fileId, result, mtime);
   }
 
   getTabScrollPosition(paneId, fileId) {

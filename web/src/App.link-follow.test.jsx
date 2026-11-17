@@ -195,7 +195,7 @@ describe('Follow markdown links', () => {
     }, { timeout: 2000 })
   })
 
-  it('ignores fragment identifier when opening link', async () => {
+  it('uses the document path without the fragment as the tab identity', async () => {
     MarkdownRenderer.renderFile.mockImplementation(async (path) => {
       if (path === '/ws/main.md') {
         return { status: 'ok', html: '<p><a href="other.md#section">link</a></p>' }

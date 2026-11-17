@@ -117,6 +117,7 @@ function mergeTreeNode(existing, newEntries, path) {
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [headingRequests, setHeadingRequests] = useState({})
+  const pendingHeadingNavigations = useRef({})
   const [activePaneId, setActivePaneId] = useState(null)
 
   const paneManagerRef = useRef(null)
@@ -404,6 +405,8 @@ function App() {
   }, [treeStatus, tree, expandedPaths, activePaneId, paneManager])
 
   async function handleFollowLink(pane, href) {
+    const navigation = {}
+    pendingHeadingNavigations.current[pane.id] = navigation
     const nid = normalizeSlashes(pane.tabManager.activeTabId)
     const currentUrl = new URL(`file://${nid}`)
     const url = new URL(href, currentUrl)
@@ -426,7 +429,14 @@ function App() {
       return
     }
 
-    await paneManager.openFile(pane.id, resolved)
+    const isCurrent = () => pendingHeadingNavigations.current[pane.id] === navigation
+    await paneManager.openFile(pane.id, resolved, url.hash ? isCurrent : undefined)
+    if (url.hash && !isCurrent()) return
+    if (url.hash) {
+      setHeadingRequests((requests) => ({
+        ...requests, [pane.id]: { fileId: resolved, fragment: url.hash.slice(1) },
+      }))
+    }
     rerender()
   }
 
@@ -458,6 +468,7 @@ function App() {
   }
 
   function handleClosePane(paneId) {
+    delete pendingHeadingNavigations.current[paneId]
     paneManager.closePane(paneId)
     rerender()
   }
@@ -518,6 +529,7 @@ function App() {
         {!folded && (
           <aside className="app-sidebar" style={{ width: `${sidebarWidth}px` }}>
             <SidebarTree tree={tree} status={treeStatus} expandedPaths={expandedPaths} onSelectFile={(path) => {
+              delete pendingHeadingNavigations.current[activePaneId]
               paneManager.openFile(activePaneId, normalizeSlashes(path)).then(rerender)
             }} onExpandDir={handleExpandDir} onCollapseDir={handleCollapseDir} />
             <div
@@ -557,6 +569,7 @@ function App() {
                       activeTabId={pane.tabManager.activeTabId}
                       activeTabScrollPosition={paneManager.getTabScrollPosition(pane.id, pane.tabManager.activeTabId)}
                       onSelectTab={(fileId) => {
+                        delete pendingHeadingNavigations.current[pane.id]
                         pane.tabManager.focusTab(fileId)
                         rerender()
                         // Refresh once when switching tabs
@@ -565,6 +578,7 @@ function App() {
                         })
                       }}
                       onCloseTab={(fileId) => {
+                        delete pendingHeadingNavigations.current[pane.id]
                         pane.tabManager.closeTab(fileId)
                         rerender()
                       }}
