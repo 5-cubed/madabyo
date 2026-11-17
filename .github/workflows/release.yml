@@ -29,10 +29,24 @@ jobs:
           npm ci
           npm run build
 
+      - name: Lint frontend
+        working-directory: web
+        run: npm run lint
+
+      - name: Test frontend
+        working-directory: web
+        run: npm test
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: false
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test backend
+        run: go test ./...
 
       - name: Build binary
         shell: bash

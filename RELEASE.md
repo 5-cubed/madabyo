@@ -181,11 +181,11 @@ Once a tag `vX.Y.Z` is pushed:
 
 1. **CI workflow** skips (not triggered on tags)
 2. **Release workflow** (`.github/workflows/release.yml`) auto-triggers
-3. Builds binaries for:
+3. Runs frontend lint/tests and Go vet/tests on each platform, then builds binaries for:
    - Linux (ubuntu-latest)
    - macOS (macos-latest)
    - Windows (windows-latest)
-4. Publishes to GitHub Releases with auto-generated release notes
+4. Publishes to GitHub Releases with auto-generated release notes only after all platform checks and builds succeed
 5. Binaries named: `madabyo-{os}-{arch}[.exe]`
 
 Example release artifacts:
