@@ -5,6 +5,15 @@ All notable changes to madabyo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-11-19
+
+### Other
+- fix(server): restore local Host validation
+- ci: gate integration builds and releases on validation
+- feat(markdown): navigate cross-document heading links
+- feat(markdown): navigate same-document heading links
+- docs(agents): configure engineering skill conventions
+
 ## [0.11.0] - 2026-09-19
 
 ### Other
